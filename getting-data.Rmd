@@ -5,13 +5,16 @@ output: html_document
 
 <style type="text/css">
 blockquote { 
-  font-size: 11pt
+    font-size: 11pt
+}
+.table {
+    width: auto !important;
 }
 </style>
 
-The data described below comes from [Wharton Research Data Services](https://wrds-web.wharton.upenn.edu/wrds/).
+The data described below comes from [Wharton Research Data Services](https://wrds-web.wharton.upenn.edu/wrds/). And it was extracted on 2016-02-26, unless otherwise stated.
 
-## Mutual Fund Holdings (s12)
+## Thomson Reuters Mutual Fund Holdings (s12)
 The data on **Mutual Fund Holdings (s12)** is provided by Thomson Reuters. The data there is divded into four types:
 
 - **s12 Master File**
@@ -40,7 +43,7 @@ The **s12 Master File** has some manupulations already performaed on it, therefo
 
 ### Type 1: fund characteristics
 
-- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
 - **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
 - **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
 - **Step 4: Select query output.** 
@@ -66,7 +69,7 @@ Data request summary:
 
 ### Type 2: stock characteristics
 
-- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
 - **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
 - **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
 - **Step 4: Select query output.** 
@@ -92,7 +95,7 @@ Data request summary:
 
 ### Type 3: stock holdings
 
-- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
 - **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
 - **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
 - **Step 4: Select query output.** 
@@ -118,7 +121,7 @@ Data request summary:
 
 ### Type 4: change in holdings
 
-- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
 - **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
 - **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
 - **Step 4: Select query output.** 
@@ -144,12 +147,61 @@ Data request summary:
 
 
 
+## CRSP Mutual Fund Database
+The data on **CRSP Mutual Funds** is divided into a number of chunks:
+
+- **Fund summary**
+- **Daily returns**
+- **Monthly returns**
+- **Portfolio holdings**
+- **Fund dividennds**
+- **Fund-portfolio map**
+- **Front loads**
+- **Rear loads**
+- **Contact information**
+
+We download all of them separately.
+
+### Fund summary
+
+- **Step 1: Choose your data range.** We use data range from 1961-12 to 2015-12, because those are the earliest and latest dates available.
+- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible. We choose all summary periods. We skip conditional statements.
+- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
+- **Step 4: Select query output.** 
+    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
+    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
+    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
+    
+The output is saved into `~data/` directory under the name `wrds-crsp-mfdb-fund-summary-196112-2015-12.zip`. 
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 414754c5b264a75c |
+| Libraries/Data Sets | crspq/fund_summary2  / |
+| Frequency/Date Range | / 29Dec1961  - 31Dec2015 |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / zip |
+| Variables Selected | CRSP_PORTNO CUSIP8 FUND_NAME NASDAQ NCUSIP FIRST_OFFER_DT CRSP_CL_GRP MGMT_NAME MGMT_CD MGR_NAME MGR_DT ADV_NAME OPEN_TO_INV RETAIL_FUND INST_FUND M_FUND END_DT DEAD_FLAG DELIST_CD INDEX_FUND_FLAG VAU_FUND ET_FLAG MERGE_FUNDNO NAV_LATEST NAV_LATEST_DT TNA_LATEST TNA_LATEST_DT YIELD NAV_52W_H NAV_52W_H_DT NAV_52W_L NAV_52W_L_DT DIV_YTD CAP_GAINS_YTD UNREALIZED_APP_DEP UNREALIZED_APP_DT MATURITY MATURITY_DT ASSET_DT PER_COM PER_PREF PER_CONV PER_CORP PER_MUNI PER_GOVT PER_OTH PER_CASH PER_BOND PER_ABS PER_MBS PER_EQ_OTH PER_FI_OTH ACCRUAL_FUND SI_OBJ_CD WBRGER_OBJ_CD CRSP_OBJ_CD SALES_RESTRICT POLICY LIPPER_CLASS LIPPER_CLASS_NAME LIPPER_OBJ_CD LIPPER_OBJ_NAME LIPPER_ASSET_CD LIPPER_TAX_CD ACTUAL_12B1 MAX_12B1 EXP_RATIO MGMT_FEE TURN_RATIO FISCAL_YEAREND |
+| Extra Variables and Parameters Selected | A Q |
 
 
 
 
 
-### Code book
+
+
+
+
+
+
+## Variable description
+### Thomson Reuters Mutual Fund Holdings
+Some of the information, including the relationship between four types can found [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf) and [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf).
+
 #### Type 1: fund characteristics
 Thomson Reuters Mutual Fund Holdings - Type 1: Fund Characteristics
 
@@ -242,6 +294,108 @@ Variable Reference
 | cusip | Cusip |
 | FDATE | File Date |
 | fundno | Fund Number |
+
+
+### CRSP Mutual Fund Database
+Some of the information, including the relationship between four types can found [here](crsp-mfdb-guide.pdf).
+
+#### Fund summary
+CRSP Mutual Funds - Summary
+
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | fund_summary2 |
+| Data Range: | 12/29/1961 - 12/31/2015 |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| accrual_fund | Accrual Fund Identifier |
+| actual_12b1 | 12b-1 Fee |
+| adv_name | Fund Advisor Name |
+| asset_dt | Effective Date of Asset Allocations |
+| cap_gains_ytd | Calendar Year-to-Date Capital Gains Sum |
+| crsp_cl_grp | Classes of a Fund |
+| crsp_obj_cd | CRSP objective codes (mapping of Strategic Insights, Wiesenberger, and Lipper objective codes) |
+| crsp_portno | Portfolio Identifier |
+| cusip8 | 8-digit CUSIP |
+| dead_flag | Dead Fund Indicator |
+| delist_cd| Identifies the reason for the fund delisting |
+| div_ytd| Calendar Year-to-Date Dividend Sum |
+| end_dt | Date of latest NAV data |
+| et_flag | Identifies if a fund is ETF(F) or ETN(N) |
+| exp_ratio | Expense Ratio as of Fiscal Year-End |
+| first_offer_dt | Date the Fund Was First Offered |
+| fiscal_yearend | Effective Date for Fees |
+| fund_name | Fund Name |
+| index_fund_flag | Identifies if a fund is an index fund |
+| inst_fund | Institutional Fund Indicator |
+| lipper_asset_cd | Lipper Asset Code |
+| lipper_class| Lipper Classification Code |
+| lipper_class_name | Lipper Classification Name |
+| lipper_obj_cd | Lipper Objective Code |
+| lipper_obj_name | Lipper Objective Name |
+| lipper_tax_cd | Taxable or Tax Exempt |
+| m_fund| Identifies if a fund was originally a "M" fund |
+| maturity | Weighted Average Maturity in Years |
+| maturity_dt | Date for Which Weighted Average Maturity Applies |
+| max_12b1| Maximum 12b-1 Fee |
+| merge_fundno| CRSP Fundno of the fund that acquired the assets of the delisted fund |
+| mgmt_cd | Management Company Number |
+| mgmt_fee | Management Fee |
+| mgmt_name| Management Company Name |
+| mgr_dt| Date Current Portfolio Mgr Took Control |
+| mgr_name| Portfolio Manager Name |
+| nasdaq | NASDAQ Ticker Symbol |
+| nav_52w_h | 52 Week High NAV |
+| nav_52w_h_dt| Date of 52 Week High NAV |
+| nav_52w_l | 52 Week Low NAV |
+| nav_52w_l_dt | Date of 52 Week Low NAV |
+| nav_latest | Latest Month-end NAV |
+| nav_latest_dt | Latest Month-end NAV Date |
+| ncusip| Fund CUSIP |
+| open_to_inv| Open to Investors|
+| per_abs | Asset-Backed Securities |
+| per_bond | All Bonds|
+| per_cash | Cash |
+| per_com | Common Stocks|
+| per_conv| Convertible Bonds |
+| per_corp | Corporate Bonds |
+| per_eq_oth | Equities other than common and preferred stocks |
+| per_fi_oth | Fixed-income securities other than the four existing bond categories, and the new ABS and MBS categories |
+| per_govt | Government Bonds |
+| per_mbs | Mortgage-Backed Securities|
+| per_muni | Municipal Bonds |
+| per_oth | Other Securities |
+| per_pref | Preferred Stocks |
+| policy | Type of Securities Mainly Held by Fund |
+| retail_fund | Retail Fund Indicator |
+| sales_restrict | Sales Restrictions |
+| si_obj_cd | Strategic Insight Objective Code | 
+| tna_latest | Latest Month-end TNA | 
+| tna_latest_dt | Latest Month-end TNA Date |
+| turn_ratio | Fund Turnover Ratio |
+| unrealized_app_dep | Unrealized Appreciation/Depreciation |
+| unrealized_app_dt | Effective Date for Unrealized Appreciate/Depreciation |
+| vau_fund | Identifies if a fund is a variable annuity underlying fund | 
+| wbrger_obj_cd | Wiesenberger Fund Type Code, Identifying Fund Strategy |
+| yield | Income Yield |
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
