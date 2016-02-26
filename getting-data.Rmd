@@ -1,0 +1,255 @@
+---
+title: "Getting data"
+output: html_document
+---
+
+<style type="text/css">
+blockquote { 
+  font-size: 11pt
+}
+</style>
+
+The data described below comes from [Wharton Research Data Services](https://wrds-web.wharton.upenn.edu/wrds/).
+
+## Mutual Fund Holdings (s12)
+The data on **Mutual Fund Holdings (s12)** is provided by Thomson Reuters. The data there is divded into four types:
+
+- **s12 Master File**
+- **Type 1: Fund Characteristics**
+- **Type 2: Stock Characteristics**
+- **Type 3: Stock Holdings**
+- **Type 4: Change in Holdgins**
+
+The **s12 Master File** has some manupulations already performaed on it, therefore we download the four types of data separately.
+
+	
+> **Important Changes to TFN Reuters - July 2008**
+> 
+> The master s12 and s34 datasets have been created by merging on FDATE (file date). This is a change to the previous design which merged the Type 2 file (stock characteristics) using the RDATE (report date) of the Type 2 file.
+> 
+> If a fund's filing is missing for a quarter (due to a late filing or other reason), Thomson Reuters carries forward the previous holding data. WRDS previously removed this duplicate record from the master file to prevent double-counting. The current master file includes all records that have been carried forward reproducing the way Thomson Reuters delivers this data.
+> 
+> Several filters imposed on the master files to eliminate duplicate records have been removed. These had minimal effect, but may still alter the data from the way Thomson Reuters provided it.
+> 
+> The SHROUTR variable is no longer produced. This WRDS-created variable was a combination of Shares Outstanding variables from both the s12 and s34 products. It was intended to address the many missing values in each of the Shares Outstanding variables provided by Thomson Reuters. However, SHROUTR may be confusing and it is not clear which source file contributed in each case.
+> 
+> The variable PERMKEY is no longer populated by Thomson Reuters and has been dropped from the master file.
+> 
+> The code used to create the s12 and s34 master files is available on the documentation page of the respective queries, and also in the Thomson Reuters sample directory on Unix. Researchers may choose to use the master files or may query each Type file directly.
+
+
+### Type 1: fund characteristics
+
+- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
+- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
+- **Step 4: Select query output.** 
+    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
+    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
+    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
+    
+The output is saved into `~data/` directory under the name `wrds-tr-s12-type1-197901-201509.zip`. 
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | fc5a81619ad5fbc0 |
+| Libraries/Data Sets | tfn/s12type1  / |
+| Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
+| Search Variable | FUNDNO |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / zip |
+| Variables Selected | ASSETS COUNTRY FDATE FUNDNAME FUNDNO IOC MGRCOAB PRDATE RDATE |
+| Extra Variables and Parameters Selected |  |
+
+### Type 2: stock characteristics
+
+- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
+- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
+- **Step 4: Select query output.** 
+    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
+    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
+    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
+    
+The output is saved into `~data/` directory under the name `wrds-tr-s12-type2-197901-201509.zip`. 
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 52673e590d7624c5 |
+| Libraries/Data Sets | tfn/s12type2    / |
+| Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
+| Search Variable | CUSIP |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / zip |
+| Variables Selected | CUSIP EXCHCD FDATE INDCODE PRC SHROUT1 SHROUT2 STKCD STKCDESC STKNAME TICKER TICKER2 |
+| Extra Variables and Parameters Selected |  |
+
+### Type 3: stock holdings
+
+- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
+- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
+- **Step 4: Select query output.** 
+    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
+    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
+    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
+    
+The output is saved into `~data/` directory under the name `wrds-tr-s12-type3-197901-201509.zip`. 
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 72c9ddaa8c9197de |
+| Libraries/Data Sets | tfn/s12type3    / |
+| Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
+| Search Variable | FUNDNO |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / zip |
+| Variables Selected | CUSIP FDATE FUNDNO SHARES |
+| Extra Variables and Parameters Selected |  |
+
+### Type 4: change in holdings
+
+- **Step 1: Choose your data range.** We use data range from 1979-07 to 2015-09, because those are the earliest and latest dates available.
+- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
+- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
+- **Step 4: Select query output.** 
+    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
+    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
+    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
+    
+The output is saved into `~data/` directory under the name `wrds-tr-s12-type4-197901-201509.zip`. 
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 849564be652bbdd7 |
+| Libraries/Data Sets | tfn/s12type4    / |
+| Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
+| Search Variable | FUNDNO |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / zip |
+| Variables Selected | CHANGE CUSIP FDATE FUNDNO |
+| Extra Variables and Parameters Selected |  |
+
+
+
+
+
+
+
+
+### Code book
+#### Type 1: fund characteristics
+Thomson Reuters Mutual Fund Holdings - Type 1: Fund Characteristics
+
+| Key | Value |
+| --- | --- |
+| Library: | tfn |
+| File: | s12type1 |
+| Data Range: | 01/01/1979 - 09/30/2015 |
+| Last Updated On: | 01/13/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| assets | End of Qtr Assets (x10000) |
+| COUNTRY | Country |
+| FDATE | File Date |
+| fundname | Fund Name |
+| fundno | Fund Number |
+| IOC | Investment Objective Code |
+| MGRCOAB | Managment Company Abbreviation |
+| PRDATE | Prior Report Date |
+| RDATE | Report Date |
+
+#### Type 2: stock characteristics
+Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics
+
+| Key | Value |
+| --- | --- |
+| Library: | tfn |
+| File: | s12type2 |
+| Data Range: | 01/01/1979 - 09/30/2015 |
+| Last Updated On: | 01/13/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| cusip | Cusip |
+| exchcd | Exchange Code |
+| FDATE | File Date |
+| indcode | Industry Code |
+| prc | End of Qtr Share Price |
+| shrout1 | End of Qtr Shares Outstanding in Millions |
+| shrout2 | End of Qtr Shares Outstanding in 1000s |
+| stkcd | Stock Class Code |
+| stkcdesc | Stock Class Description |
+| stkname | Stock Name |
+| tick | Ticker Symbol |
+| ticker2 | Extended Company Ticker Symbol |
+
+#### Type 3: stock holdings
+Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics
+
+| Key | Value |
+| --- | --- |
+| Library: | tfn |
+| File: | s12type3 |
+| Data Range: | 01/01/1979 - 09/30/2015 |
+| Last Updated On: | 01/13/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| cusip | Cusip |
+| FDATE | File Date |
+| fundno | Fund Number |
+| shares | Shares Held at End of Qtr |
+
+#### Type 4: change in holdings
+Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics
+
+| Key | Value |
+| --- | --- |
+| Library: | tfn |
+| File: | s12type4 |
+| Data Range: | 01/01/1979 - 09/30/2015 |
+| Last Updated On: | 01/13/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| change | Net Change in Shares Since Prior Report |
+| cusip | Cusip |
+| FDATE | File Date |
+| fundno | Fund Number |
+
+
+
+
+
+
+
+
+
+
+    

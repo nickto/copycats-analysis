@@ -1,0 +1,11 @@
+
+.Rhistory
+
+
+
+/bin/
+/data/
+/test/**
+//*.zip
+*.html
+*.Rproj.user/
