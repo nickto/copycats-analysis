@@ -42,106 +42,118 @@ The **s12 Master File** has some manupulations already performaed on it, therefo
 
 
 ### Type 1: fund characteristics
+#### Query form
 
-- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
-- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
-- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
-- **Step 4: Select query output.** 
-    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
-    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
-    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
-    
-The output is saved into `~data/` directory under the name `wrds-tr-s12-type1-197901-201509.zip`. 
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1979-01`--`2015-09` |
+| **Step 2: Apply your company codes.** | | `FUNDNO` |
+|  | Select an option for entering company codes | Search the entire database |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
 
-Data request summary:
+The output is saved into `~/data/` directory under the name `wrds-tr-s12-type1-197901-201509.csv.gz`. 
+
+#### Data request summary
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | fc5a81619ad5fbc0 |
+| Data Request ID | 1a279ca168c9cd26 |
 | Libraries/Data Sets | tfn/s12type1  / |
 | Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
 | Search Variable | FUNDNO |
 | Input Codes all item(s) | `-all-` |
 | Conditional Statements | n/a |
-| Output format/Compression | csv / zip |
+| Output format/Compression | csv / gz |
 | Variables Selected | ASSETS COUNTRY FDATE FUNDNAME FUNDNO IOC MGRCOAB PRDATE RDATE |
 | Extra Variables and Parameters Selected |  |
 
 ### Type 2: stock characteristics
+#### Query form
 
-- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
-- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
-- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
-- **Step 4: Select query output.** 
-    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
-    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
-    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
-    
-The output is saved into `~data/` directory under the name `wrds-tr-s12-type2-197901-201509.zip`. 
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1979-01`--`2015-09` |
+| **Step 2: Apply your company codes.** | | `CUSIP` |
+|  | Select an option for entering company codes | Search the entire database |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
 
-Data request summary:
+The output is saved into `~/data/` directory under the name `wrds-tr-s12-type2-197901-201509.csv.gz`. 
+
+#### Data request summary
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | 52673e590d7624c5 |
+| Data Request ID | cb7bd750ea5f15aa |
 | Libraries/Data Sets | tfn/s12type2    / |
 | Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
 | Search Variable | CUSIP |
 | Input Codes all item(s) | `-all-` |
 | Conditional Statements | n/a |
-| Output format/Compression | csv / zip |
+| Output format/Compression | csv / gz |
 | Variables Selected | CUSIP EXCHCD FDATE INDCODE PRC SHROUT1 SHROUT2 STKCD STKCDESC STKNAME TICKER TICKER2 |
 | Extra Variables and Parameters Selected |  |
 
 ### Type 3: stock holdings
+#### Query form
 
-- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
-- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
-- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
-- **Step 4: Select query output.** 
-    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
-    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
-    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
-    
-The output is saved into `~data/` directory under the name `wrds-tr-s12-type3-197901-201509.zip`. 
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1979-01`--`2015-09` |
+| **Step 2: Apply your company codes.** | | `CUSIP (of holdings)` |
+|  | Select an option for entering company codes | Search the entire database |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
 
-Data request summary:
+The output is saved into `~/data/` directory under the name `wrds-tr-s12-type3-197901-201509.csv.gz`. 
+
+#### Data request summary
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | 72c9ddaa8c9197de |
+| Data Request ID | cb7bd750ea5f15aa |
 | Libraries/Data Sets | tfn/s12type3    / |
 | Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
 | Search Variable | FUNDNO |
 | Input Codes all item(s) | `-all-` |
 | Conditional Statements | n/a |
-| Output format/Compression | csv / zip |
+| Output format/Compression | csv / gz |
 | Variables Selected | CUSIP FDATE FUNDNO SHARES |
 | Extra Variables and Parameters Selected |  |
 
 ### Type 4: change in holdings
+#### Query form
 
-- **Step 1: Choose your data range.** We use data range from 1979-01 to 2015-09, because those are the earliest and latest dates available.
-- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible.
-- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
-- **Step 4: Select query output.** 
-    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
-    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
-    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
-    
-The output is saved into `~data/` directory under the name `wrds-tr-s12-type4-197901-201509.zip`. 
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1979-01`--`2015-09` |
+| **Step 2: Apply your company codes.** | | `CUSIP (of holdings)` |
+|  | Select an option for entering company codes | Search the entire database |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
 
-Data request summary:
+The output is saved into `~/data/` directory under the name `wrds-tr-s12-type4-197901-201509.csv.gz`. 
+
+#### Data request summary
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | 849564be652bbdd7 |
+| Data Request ID | ac457d43e878375b |
 | Libraries/Data Sets | tfn/s12type4    / |
 | Frequency/Date Range | / 01Jan1979 - 30Sep2015 |
 | Search Variable | FUNDNO |
 | Input Codes all item(s) | `-all-` |
 | Conditional Statements | n/a |
-| Output format/Compression | csv / zip |
+| Output format/Compression | csv / gz |
 | Variables Selected | CHANGE CUSIP FDATE FUNDNO |
 | Extra Variables and Parameters Selected |  |
 
@@ -163,31 +175,289 @@ The data on **CRSP Mutual Funds** is divided into a number of chunks:
 We download all of them separately.
 
 ### Fund summary
+#### Query form
 
-- **Step 1: Choose your data range.** We use data range from 1961-12 to 2015-12, because those are the earliest and latest dates available.
-- **Step 2: Apply your company codes.** We choose to search the entire database, because we will need as much information as possible. We choose all summary periods. We skip conditional statements.
-- **Step 3: Query Variables.** We choose all variables for the same reason as ine step 2.
-- **Step 4: Select query output.** 
-    - **Output Format:** we select **comma-delimited text (*csv)**, because it is a very wide-spread and easy to work with format.
-    - **Compression Type:** we select **zip (*.zip)**, because the data files are expected to be quite bulky.
-    - **Date Format:** we select **YYMMDDs10. (e.g. 1984/07/25)**, because it is the most convenient for us.
-    
-The output is saved into `~data/` directory under the name `wrds-crsp-mfdb-fund-summary-196112-2015-12.zip`. 
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1961-12`--`2015-12` |
+| **Step 2: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Choose Summary Period: | All |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz`.
+
+#### Data request summary
 
 Data request summary:
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | 414754c5b264a75c |
+| Data Request ID | 94fa457aed11dd22 |
 | Libraries/Data Sets | crspq/fund_summary2  / |
 | Frequency/Date Range | / 29Dec1961  - 31Dec2015 |
 | Search Variable | crsp_fundno |
 | Input Codes all item(s) | `-all-` |
 | Conditional Statements | n/a |
-| Output format/Compression | csv / zip |
+| Output format/Compression | csv / gz |
 | Variables Selected | CRSP_PORTNO CUSIP8 FUND_NAME NASDAQ NCUSIP FIRST_OFFER_DT CRSP_CL_GRP MGMT_NAME MGMT_CD MGR_NAME MGR_DT ADV_NAME OPEN_TO_INV RETAIL_FUND INST_FUND M_FUND END_DT DEAD_FLAG DELIST_CD INDEX_FUND_FLAG VAU_FUND ET_FLAG MERGE_FUNDNO NAV_LATEST NAV_LATEST_DT TNA_LATEST TNA_LATEST_DT YIELD NAV_52W_H NAV_52W_H_DT NAV_52W_L NAV_52W_L_DT DIV_YTD CAP_GAINS_YTD UNREALIZED_APP_DEP UNREALIZED_APP_DT MATURITY MATURITY_DT ASSET_DT PER_COM PER_PREF PER_CONV PER_CORP PER_MUNI PER_GOVT PER_OTH PER_CASH PER_BOND PER_ABS PER_MBS PER_EQ_OTH PER_FI_OTH ACCRUAL_FUND SI_OBJ_CD WBRGER_OBJ_CD CRSP_OBJ_CD SALES_RESTRICT POLICY LIPPER_CLASS LIPPER_CLASS_NAME LIPPER_OBJ_CD LIPPER_OBJ_NAME LIPPER_ASSET_CD LIPPER_TAX_CD ACTUAL_12B1 MAX_12B1 EXP_RATIO MGMT_FEE TURN_RATIO FISCAL_YEAREND |
 | Extra Variables and Parameters Selected | A Q |
 
+### Daily returns
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1998-09-01`--`2015-12-31` |
+| **Step 2: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 6488cfb72e6cfb75 |
+| Libraries/Data Sets | crspq/daily_nav_ret  /  |
+| Frequency/Date Range | / 01Sep1998 - 31Dec2015|
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | DRET DNAV |
+| Extra Variables and Parameters Selected | |
+
+### Monthly returns
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1961-12`--`2015-12` |
+| **Step 2: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 44f62b5897d88727 |
+| Libraries/Data Sets | crspq/monthly_tna_ret_nav  / |
+| Frequency/Date Range | / 01Dec1961 - 31Dec2015 |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | MRET MNAV MTNA |
+| Extra Variables and Parameters Selected | |
+
+### Portfolio holdings
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date Variable: | Date pf holdings as reported |
+| Date range | `2001-01`--`2015-12` |
+| **Step 2: Apply your company codes.** | | `CRSP Portno` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 622b95ce9d6d9626 |
+| Libraries/Data Sets | crspq/holdings  / |
+| Frequency/Date Range | / 01Jan2001 - 31Dec2015|
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | CRSP_PORTNO REPORT_DT SECURITY_RANK EFF_DT PERCENT_TNA NBR_SHARES MARKET_VAL SECURITY_NAME CUSIP PERMNO PERMCO TICKER COUPON MATURITY_DT |
+| Extra Variables and Parameters Selected | |
+
+### Fund dividends
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your data range.** | Date range | `1960-12-01`--`2015-12` |
+| **Step 2: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 3: Query Variables.** | Select | All |
+| **Step 4: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-fund-dividends-19601201-201512.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 97b6ae3ea5404755 |
+| Libraries/Data Sets | crspq/dividends  /  |
+| Frequency/Date Range | / 01Dec1960 - 31Dec2015 |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | DIS_TYPE DIS_AMT REINVEST_NAV SPL_RATIO |
+| Extra Variables and Parameters Selected | |
+
+### Fund-portfolio map
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Apply your company codes.** | | `CRSP Fundno` |
+|  | Select an option for entering company codes | Search the entire database |
+| **Step 2: Query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-fund-portfolio-map.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | b22eddacd8eaebaa |
+| Libraries/Data Sets | crspq/portnomap  /  |
+| Frequency/Date Range | / -  |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | CRSP_FUNDNO CRSP_PORTNO BEGDT ENDDT FUND_NAME NASDAQ NCUSIP CUSIP8 FIRST_OFFER_DT END_DT MGMT_NAME MGMT_CD MGR_NAME MGR_DT ADV_NAME OPEN_TO_INV RETAIL_FUND INST_FUND DEAD_FLAG DELIST_CD MERGE_FUNDNO |
+| Extra Variables and Parameters Selected | |
+
+### Front loads
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 2: Query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-front-loads.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 7f3f31bc0421466b |
+| Libraries/Data Sets | crspq/front_load  / |
+| Frequency/Date Range | / -  |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | BEGDT ENDDT FRONT_GROUP_NO FRONT_LOAD DOLLAR_AMT |
+| Extra Variables and Parameters Selected | |
+
+### Rear loads
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 2: Query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-rear-loads.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | bd032691516f794d |
+| Libraries/Data Sets | crspq/rear_load  / |
+| Frequency/Date Range | / -  |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | BEGDT ENDDT REAR_GROUP_NO REAR_LOAD INV_LVL LOAD_TYPE TIME_PERIOD |
+| Extra Variables and Parameters Selected | |
+
+### Contact information
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Apply your company codes.** | | `Fund Identifier` |
+|  | Select an option for entering company codes | Search the entire database |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 2: Query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-mfdb-contact-infromation.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | 5dcc2a4372d7eb02 |
+| Libraries/Data Sets | crspq/contact_info  / |
+| Frequency/Date Range | / -  |
+| Search Variable | crsp_fundno |
+| Input Codes all item(s) | `-all-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | BCHGDT CHGENDDT ADDRESS1 ADDRESS2 CITY STATE ZIP PHONE_NUMBER FUND_TOLL_FREE WEBSITE |
+| Extra Variables and Parameters Selected | |
 
 
 
@@ -385,20 +655,187 @@ Variable Reference
 | wbrger_obj_cd | Wiesenberger Fund Type Code, Identifying Fund Strategy |
 | yield | Income Yield |
 
+#### Daily returns
+CRSP Mutual Funds - Daily Returns and Net Asset Values
 
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | daily_nav_ret |
+| Data Range: | 09/01/1998 - 12/31/2015   |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Quarterly |
 
+Variable Reference
 
+| Variable Name | Variable Description |
+| --- | --- |
+| dnav | Net Asset Value per Share |
+| dret | Return per Share |
 
+#### Monthly returns
+CRSP Mutual Funds - Monthly Returns and Net Asset Values
 
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | monthly_tna_ret_nav |
+| Data Range: | 12/01/1961 - 12/31/2015 |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Quarterly |
 
+Variable Reference
 
+| Variable Name | Variable Description |
+| --- | --- |
+| mnav | Net Asset Value per Share |
+| mret | Return per Share |
+| mtna | Total Net Asset Value |
 
+#### Portfolio holdings
+CRSP Mutual Funds - Holdings
 
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | holdings |
+| Data Range: | 01/01/2001 - 12/31/2015 |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Quarterly |
 
+Variable Reference
 
+| Variable Name | Variable Description |
+| --- | --- |
+| coupon | Bond Coupon Rate |
+| crsp_portno | Portfolio Identifier |
+| cusip | Security CUSIP |
+| eff_dt | Date that CRSP obtained the information from source |
+| market_val | Market Value of Security as of Effective Date |
+| maturity_dt | Date of Bond Maturity | 	
+| nbr_shares | Number of Security's Shares |
+| percent_tna| Security's Percentage of Total Net Assets | 
+| permco | PERMCO |
+| permno| PERMNO |
+| report_dt | Period End Date, as Reported |
+| security_name | Name of Security |
+| security_rank | Rank of Percentage of Total Net Assets in Portfolio |
+| ticker | Ticker Symbol Given by Exchange |
 
+#### Fund dividends
+CRSP Mutual Fund - Dividends
 
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | dividends |
+| Data Range: | 12/01/1960 - 12/31/2015 |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Quarterly |
 
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| dis_amt | Amount of Distribution |
+| dis_type | Type of Distribution |
+| reinvest_nav | Reinvestment NAV |
+| spl_ratio | Split Ratio |
+
+#### Fund-portfolio maps
+CRSP Mutual Funds - Fund Number to Portfolio Number Mapping
+
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | portnomap |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| adv_name | Fund Advisor Name |
+| begdt | Beginning Date of Mapping |
+| crsp_fundno | CRSP Fund Number |
+| crsp_portno | CRSP Portfolio Number |
+| cusip8| CUSIP (8 digits) |
+| dead_flag | Dead Fund Indicator |
+| delist_cd | Delist Code|
+| end_dt | Date of latest NAV data |
+| enddt| Ending Date of Mapping |
+| first_offer_dt | Date the Fund Was First Offered |
+| fund_name | Fund Name |
+| inst_fund | Institutional Fund Indicator |
+| merge_fundno | Mergers Fundno |
+| mgmt_cd | Management Company Number |
+| mgmt_name | Management Company Name |
+| mgr_dt | Date Current Portfolio Manager Took Control |
+| mgr_name | Portfolio Manager Name |
+| nasdaq | NASDAQ Ticker Symbol |
+| ncusip| CUSIP (Original 9 digits) |
+| open_to_inv | Open to Investors |
+| retail_fund | Retail Fund Indicator |
+
+#### Front loads
+CRSP Mutual Funds - Front Loads
+
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | front_load |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| begdt | Beginning Group Date |
+| dollar_amt | Dollar Amount |
+| enddt | Ending Group Date |
+| front_group_no | Front Group Number |
+| front_load | Maximum Front-End Load |
+
+#### Rear loads
+CRSP Mutual Funds - Front Loads
+
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | rear_load |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| begdt | Beginning Group Date|
+| enddt | Ending Group Date |
+| inv_lvl| Dollar Amount|
+| load_type| Load Type|
+| rear_group_no | Rear Group Number |
+| rear_load | Max Defer & Rear Load Charges |
+| time_period | Number of Months over Which Rear-Load Fee Applies |
+
+#### Contact information
+CRSP Mutual Funds - Contact Information
+
+| Key | Value |
+| --- | --- |
+| Library: | crspq |
+| File: | contact_info |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| address1 | Management Company Address - Line 1 |
+| address2 | Management Company Address - Line 2 |
+| chgdt | Beginning Date for Contact Information |
+| chgenddt | Ending Date for Contact Information |
+| city | Management Company City |
+| fund_toll_free | Fund Company Toll Free Number |
+| phone_number | Management Company Telephone Number |
+| state | Management Company State |
+| website | Management Company Website Address |
+| zip | Management Company Zip Code |
 
 
 
