@@ -470,7 +470,7 @@ Data request summary:
 
 ## Variable description
 ### Thomson Reuters Mutual Fund Holdings
-Some of the information, including the relationship between four types can found [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf) and [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf).
+Some of the information, including the relationship between four types can found [here](./data-description/raw/tr-mfh/wrds-overview-of-thomson-reuters-mutual-fund-and-investment-company-data.pdf) and [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf).
 
 #### Type 1: fund characteristics
 Thomson Reuters Mutual Fund Holdings - Type 1: Fund Characteristics
