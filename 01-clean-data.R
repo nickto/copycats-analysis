@@ -34,7 +34,7 @@ levels(data$ioc) <- plyr::revalue(levels(data$ioc),
                                   codeDefinitions$ioc)
 
 # Rename data variable
-trS12Type1 <- data
+trFunfCharac <- data
 
 
 # Thomson Reuters Mutual Funds Type 2
@@ -74,7 +74,7 @@ levels(data$indcode) <- plyr::revalue(levels(data$indcode),
                                       codeDefinitions$indcode)
 
 # Rename data variable
-trS12Type2 <- data
+trStockCharac <- data
 
 
 # Thomson Reuters Mutual Funds Type 3
@@ -97,9 +97,9 @@ data <- read.csv.ffdf(file = filePath,
 
 # Assign code definitions
 
-
 # Rename data variable
-trS12Type3 <- data
+trHoldings <- data
+
 
 
 
