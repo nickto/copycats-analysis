@@ -101,7 +101,28 @@ data <- read.csv.ffdf(file = filePath,
 trHoldings <- data
 
 
+# Thomson Reuters Mutual Funds Type 4
+fileName <- "wrds-tr-s12-type4-197901-201509.csv.gz"
+filePath <- paste(dataDir, fileName, sep = "/")
 
+# Specify column types
+colClassVector <- c("Date",
+                    "factor",
+                    "integer",
+                    "integer")
+
+# Read teh data from csv
+data <- read.csv.ffdf(file = filePath,
+                      header=TRUE,
+                      VERBOSE = TRUE,
+                      colClasses = colClassVector,
+                      na.strings = "",
+                      nrow = nRows)
+
+# Assign code definitions
+
+# Rename data variable
+trHoldingsChg <- data
 
 
 # con <- gzfile(filePath, open = "r")
