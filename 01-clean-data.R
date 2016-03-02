@@ -3,22 +3,22 @@ source("./code-definitions.R")
 
 # Commong settings
 dataDir <- "data"
-setDefaults('as.Date.character', format = '%Y/%m/%d')
-nRows <- 10000
+setAs("character","wrdsDate", function(from) as.Date(from, format="%Y/%m/%d"))
+nRows <- 0
 
 # Thomson Reuters Mutual Funds Type 1
 fileName <- "wrds-tr-s12-type1-197901-201509.csv.gz"
 filePath <- paste(dataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("Date",
+colClassVector <- c("wrdsDate",
                     "integer",
                     "factor",
                     "factor",
-                    "Date",
+                    "wrdsDate",
                     "integer",
                     "factor",
-                    "Date",
+                    "wrdsDate",
                     "factor")
 
 # Read teh data from csv
@@ -42,7 +42,7 @@ fileName <- "wrds-tr-s12-type2-197901-201509.csv.gz"
 filePath <- paste(dataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("Date",
+colClassVector <- c("wrdsDate",
                     "factor",
                     "factor",
                     "factor",
@@ -82,7 +82,7 @@ fileName <- "wrds-tr-s12-type3-197901-201509.csv.gz"
 filePath <- paste(dataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("Date",
+colClassVector <- c("wrdsDate",
                     "factor",
                     "integer",
                     "integer")
@@ -106,7 +106,7 @@ fileName <- "wrds-tr-s12-type4-197901-201509.csv.gz"
 filePath <- paste(dataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("Date",
+colClassVector <- c("wrdsDate",
                     "factor",
                     "integer",
                     "integer")
