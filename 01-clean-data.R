@@ -4,7 +4,7 @@ source("./code-definitions.R")
 # Commong settings
 dataDir <- "data"
 setDefaults('as.Date.character', format = '%Y/%m/%d')
-nRows <- 0
+nRows <- 10000
 
 # Thomson Reuters Mutual Funds Type 1
 fileName <- "wrds-tr-s12-type1-197901-201509.csv.gz"
@@ -29,7 +29,7 @@ data <- read.csv.ffdf(file = filePath,
                       na.strings = "",
                       nrow = nRows)
 
-# Assign code definitions to numeric variables to create factors
+# Assign code definitions
 levels(data$ioc) <- plyr::revalue(levels(data$ioc),
                                   codeDefinitions$ioc)
 
@@ -63,7 +63,7 @@ data <- read.csv.ffdf(file = filePath,
                       na.strings = "",
                       nrow = nRows)
 
-# Assign code definitions to numeric variables to create factors
+# Assign code definitions
 levels(data$exchcd) <- plyr::revalue(levels(data$exchcd),
                                      codeDefinitions$exchcd)
 levels(data$stkcd) <- plyr::revalue(levels(data$stkcd),
@@ -77,7 +77,29 @@ levels(data$indcode) <- plyr::revalue(levels(data$indcode),
 trS12Type2 <- data
 
 
+# Thomson Reuters Mutual Funds Type 3
+fileName <- "wrds-tr-s12-type3-197901-201509.csv.gz"
+filePath <- paste(dataDir, fileName, sep = "/")
 
+# Specify column types
+colClassVector <- c("Date",
+                    "factor",
+                    "integer",
+                    "integer")
+
+# Read teh data from csv
+data <- read.csv.ffdf(file = filePath,
+                      header=TRUE,
+                      VERBOSE = TRUE,
+                      colClasses = colClassVector,
+                      na.strings = "",
+                      nrow = nRows)
+
+# Assign code definitions
+
+
+# Rename data variable
+trS12Type3 <- data
 
 
 
