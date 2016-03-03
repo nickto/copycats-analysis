@@ -1,3 +1,5 @@
+source("./00-load-packages.R")
+
 codeDefinitions <- list()
 
 # Thomson Reuters Mutual Funds
