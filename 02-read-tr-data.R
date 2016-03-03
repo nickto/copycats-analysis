@@ -1,7 +1,8 @@
 # store the start time
 ptm <- proc.time()
 
-source("./01-code-definitions.R")
+source("./00-load-packages.R")
+source("./code-definitions.R")
 
 # Commong settings
 dataDir <- "data"
