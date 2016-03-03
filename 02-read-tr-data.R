@@ -1,24 +1,30 @@
+# store the start time
+ptm <- proc.time()
+
 source("./00-load-packages.R")
 source("./code-definitions.R")
 
 # Commong settings
 dataDir <- "data"
-setAs("character","wrdsDate", function(from) as.Date(from, format="%Y/%m/%d"))
-nRows <- 0
+rawDataDir <- paste(dataDir, "raw", sep = "/")
+ffdfDataDir <- paste(dataDir, "ffdf", sep = "/")
+if (!dir.exists(ffdfDataDir)) dir.create(ffdfDataDir)
+# setDefaults('as.Date.character', format = '%Y/%m/%d')
+nRows <- -1 # negative values are ignored, thus, whole file is read
 
 # Thomson Reuters Mutual Funds Type 1
 fileName <- "wrds-tr-s12-type1-197901-201509.csv.gz"
-filePath <- paste(dataDir, fileName, sep = "/")
+filePath <- paste(rawDataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("wrdsDate",
+colClassVector <- c("Date",
                     "integer",
                     "factor",
                     "factor",
-                    "wrdsDate",
+                    "Date",
                     "integer",
                     "factor",
-                    "wrdsDate",
+                    "Date",
                     "factor")
 
 # Read teh data from csv
@@ -34,15 +40,23 @@ levels(data$ioc) <- plyr::revalue(levels(data$ioc),
                                   codeDefinitions$ioc)
 
 # Rename data variable
-trFunfCharac <- data
+trFundCharac <- data
+
+# save ffdf
+save.ffdf(trFundCharac,
+          dir = paste(ffdfDataDir, "trFundCharac", sep = "/"),
+          overwrite = TRUE)
+
+# remove ffdf from memory
+rm(trFundCharac)
 
 
 # Thomson Reuters Mutual Funds Type 2
 fileName <- "wrds-tr-s12-type2-197901-201509.csv.gz"
-filePath <- paste(dataDir, fileName, sep = "/")
+filePath <- paste(rawDataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("wrdsDate",
+colClassVector <- c("Date",
                     "factor",
                     "factor",
                     "factor",
@@ -76,16 +90,24 @@ levels(data$indcode) <- plyr::revalue(levels(data$indcode),
 # Rename data variable
 trStockCharac <- data
 
+# save ffdf
+save.ffdf(trStockCharac,
+          dir = paste(ffdfDataDir, "trStockCharac", sep = "/"),
+          overwrite = TRUE)
+
+# remove ffdf from memory
+rm(trStockCharac)
+
 
 # Thomson Reuters Mutual Funds Type 3
 fileName <- "wrds-tr-s12-type3-197901-201509.csv.gz"
-filePath <- paste(dataDir, fileName, sep = "/")
+filePath <- paste(rawDataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("wrdsDate",
+colClassVector <- c("Date",
                     "factor",
                     "integer",
-                    "integer")
+                    "double")
 
 # Read teh data from csv
 data <- read.csv.ffdf(file = filePath,
@@ -100,16 +122,23 @@ data <- read.csv.ffdf(file = filePath,
 # Rename data variable
 trHoldings <- data
 
+# save ffdf
+save.ffdf(trHoldings,
+          dir = paste(ffdfDataDir, "trHoldings", sep = "/"),
+          overwrite = TRUE)
+
+# remove ffdf from memory
+rm(trHoldings)
 
 # Thomson Reuters Mutual Funds Type 4
 fileName <- "wrds-tr-s12-type4-197901-201509.csv.gz"
-filePath <- paste(dataDir, fileName, sep = "/")
+filePath <- paste(rawDataDir, fileName, sep = "/")
 
 # Specify column types
-colClassVector <- c("wrdsDate",
+colClassVector <- c("Date",
                     "factor",
                     "integer",
-                    "integer")
+                    "double")
 
 # Read teh data from csv
 data <- read.csv.ffdf(file = filePath,
@@ -123,6 +152,18 @@ data <- read.csv.ffdf(file = filePath,
 
 # Rename data variable
 trHoldingsChg <- data
+
+# save ffdf
+save.ffdf(trHoldingsChg,
+          dir = paste(ffdfDataDir, "trHoldingsChg", sep = "/"),
+          overwrite = TRUE)
+
+# remove ffdf from memory
+rm(trHoldingsChg)
+
+
+# count ellapsed time
+proc.time() - ptm
 
 
 # con <- gzfile(filePath, open = "r")
