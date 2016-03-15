@@ -9,6 +9,5 @@
 
 /test/**
 //*.zip
-*.html
 *.Rproj.user/
 .Rproj.user
