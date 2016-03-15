@@ -14,6 +14,8 @@ This repo contains scripts needed to set up a data base and perform analysis. Da
 ### Download 
 Data is downloaded from [WRDS](https://wrds-web.wharton.upenn.edu/) web-site. The process is described in [getting-data.html](http://htmlpreview.github.com/?https://github.com/nickto/copycats-analysis/blob/master/getting-data.html) in details.
 
+Data can be also found [here](https://mega.nz/#F!EhpUlTyR), however, this link is encrypted, because it is probably prohibited to share this data :)
+
 ### Set up database
 Data base is set up in [PostgreSQL 9.5.1](http://www.enterprisedb.com/products-services-training/pgdownload#windows) under Windows 10 operating system. The batch file intended to run is `import-csv-into-database.bat`. It performs the following tasks:
 
