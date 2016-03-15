@@ -32,59 +32,74 @@ LIMIT 100
 fundList <- dbGetQuery(con, sql_command)
 
 for (i in 1:length(fundList$fundno)) {
-    fno <- fundList$fundno[i]
+    #fno <- fundList$fundno[i]
+    fno <- 1389
+
+    # obtain holdings of a fund
     sql_command <- paste0("
-    SELECT *
-        FROM tr.detailed_holdings
+        SELECT
+            tr.holdings.*,
+            tr.stock_characteristics.stkname,
+            tr.stock_characteristics.ticker,
+            tr.stock_characteristics.ticker2,
+            tr.stock_characteristics.exchcd,
+            tr.stock_characteristics.stkcd,
+            tr.stock_characteristics.stkcdesc,
+            tr.stock_characteristics.shrout1,
+            tr.stock_characteristics.prc,
+            tr.stock_characteristics.shrout2,
+            tr.stock_characteristics.indcode
+        FROM tr.holdings
+        LEFT OUTER JOIN tr.stock_characteristics ON
+            (
+                tr.holdings.cusip = tr.stock_characteristics.cusip AND
+                tr.holdings.fdate = tr.stock_characteristics.fdate
+            )
         WHERE fundno = ", fno, "
     ")
-    fundHoldingsDF <- dbGetQuery(con, sql_command)
+    holdingsDF <- dbGetQuery(con, sql_command)
 
+    # calculate derived value (shares time their price)
+    holdingsDF$value <- with(holdingsDF, {value <- prc * shares})
 
+    # store these values
+    assets <- aggregate(holdingsDF$value,
+                        by = list(holdingsDF$fdate),
+                        FUN = sum,
+                        na.rm = TRUE)
+
+    names(assets) <- c("fdate", "derived")
+
+    # obtain reported assets value
     sql_command <- paste0("
-    SELECT
-        fundno,
-        fdate,
-        SUM(prc * shares)
-        FROM tr.detailed_holdings
-    WHERE fundno = ", fno, "
-    GROUP BY fundno, fdate
-    ORDER BY fdate ASC
-    ")
-    fundDetailedHoldingsDF <- dbGetQuery(con, sql_command)
-
-    sql_command <- paste0("
-    SELECT
-        *
+        SELECT
+            fdate,
+            assets,
+            rdate
         FROM tr.fund_characteristics
-    WHERE fundno = ", fno, "
+            WHERE fundno = ", fno, "
     ")
-    rawDf <- dbGetQuery(con, sql_command)
+    reportedDF <- dbGetQuery(con, sql_command)
+    # adjust b ya factor of 10000
+    with(reportedDF, assets <- assets * 10000)
 
-    # common data frame
-    commonDF <- merge(x = fundDetailedHoldingsDF, y = rawDf, by = "fdate", all = TRUE)
-    commonDF <- commonDF[, c("fdate", "assets", "sum")]
-    commonDF$assets <- commonDF$assets * 10000
-
+    # merge two tables
+    commonDF <- merge(assets, reportedDF, by = "fdate", ALL = TRUE)
+    names(commonDF) <- c("fdate", "derived", "reported", "rdate")
 
 
     if (!dir.exists("export")) dir.create("export")
     if (!dir.exists("export/images")) dir.create("export/images")
     png(paste0("export/images/", fno, ".png"))
-    plot(commonDF$fdate, commonDF$assets)
-    lines(commonDF$fdate, commonDF$assets, col = "blue")
-    lines(commonDF$fdate, commonDF$sum, col = "red")
+    with(commonDF, {
+        plot(fdate, reported)
+        lines(fdate, reported, col = "blue")
+        lines(fdate, derived, col = "red")
+    })
+
     dev.off()
 }
 
 
-# template
-sql_command <- "
-SELECT *
-    FROM tr.fund_characteristics
-    WHERE ioc = 3
-    OFFSET 10012
-    LIMIT 1
-"
-dbGetQuery(con, sql_command)
+
 

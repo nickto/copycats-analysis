@@ -8,7 +8,7 @@
 
 
 :: Add 7zip to PATH, so that we can use it from command line (this needs to be done just once)
-:: set PATH=%PATH%;C:\Program Files\7-Zip\
+set PATH=%PATH%;C:\Program Files\7-Zip\
 :: default path to postgre bin/ folder
 SET postgreBin="C:\Program Files\PostgreSQL\9.5\bin\"
 
