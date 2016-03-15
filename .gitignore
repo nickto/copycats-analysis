@@ -5,6 +5,8 @@
 
 /bin/
 /data/
+/export/
+
 /test/**
 //*.zip
 *.html
