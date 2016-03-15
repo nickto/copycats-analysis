@@ -45,7 +45,7 @@ IF [%3]==[] GOTO:TRUE-3
 GOTO:ELSE-3
 :TRUE-3
 :: set default value for parameter
-:: is already set
+SET password=default-password-for-copycats
 GOTO:END-IF-3
 :: set custom (passed) value for parameter
 :ELSE-3
@@ -57,7 +57,7 @@ IF [%4]==[] GOTO:TRUE-4
 GOTO:ELSE-4
 :TRUE-4
 :: set default value for parameter
-
+:: is already set
 GOTO:END-IF-4
 :: set custom (passed) value for parameter
 :ELSE-4
@@ -80,13 +80,11 @@ GOTO:2
 ECHO Start from creating a database
 :2
 CALL batch\02-create-database.bat %username% %postgreBin%
-ECHO me here 1
 GOTO:3
 
 :create-schemas
 ECHO: Start from creating a table
 :3
-ECHO:me here
 CALL batch\03-create-schemas.bat %username% %postgreBin%
 GOTO:4
 
@@ -100,6 +98,15 @@ GOTO:5
 ECHO: Just import from csv
 :5
 CALL batch\05-copy-csv.bat %username% %postgreBin%
+
+:edit-tables
+ECHO: Edit imported tables
+:6
+CALL batch\06-edit-tables.bat %username% %postgreBin%
+
+
+
+
 
 GOTO:pause-in-the-end
 
