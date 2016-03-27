@@ -4,4 +4,4 @@ SET postgreBin=%2
 
 %postgreBin%psql.exe -a -f "%~dp0\02-create-db-copycats.sql" postgres %username%
 
-ECHO Database "copycats" created succesfully.
+ECHO If not error messages were shown, database "copycats" created succesfully.
