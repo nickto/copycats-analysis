@@ -271,6 +271,10 @@ else
 #	awk -F, -f ./awk/crsp-daily-return.awk | \
 #	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
 
+    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
+	'\200-\377' | gzip > \
+ 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
+    
     echo Temporary daily returns files created succesfully.
 
 
