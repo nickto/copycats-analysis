@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# TODO
+# experiment with psql variable name so that it points directly to psql.exe
+# create a table
+
 # This shell script creates a database and sets it up for further convenient
 # analysis in R.
 
@@ -9,23 +13,33 @@
 
 # Set up directories and variable values
 # Set up directory locations
-psqlDir=/cygdrive/c/Program\ Files/PostgreSQL/9.5/bin/
+psql=/cygdrive/c/Program\ Files/PostgreSQL/9.5/bin/psql.exe
+createuser=/cygdrive/c/Program\ Files/PostgreSQL/9.5/bin/createuser.exe
+
 copycatsDir=$(pwd)
 
 # Set up usernames and passwords (not recommended to change)
-username=copycattest
+username=copycat
 dbname=copycats
 password=default-password-for-copycats
+database=copycats
 
+# default username and databse (username was provided during installation 
+# process; database is the one that already exist)
+postgresUser=postgres
+postgresDb=postgres
+
+
+# Change directory to PostgreSQL/bin directory
+# cd "$psqlDir"
 
 # Create a user
-# Change directory to PostgreSQL/bin directory
-cd "$psqlDir"
+echo ----------------------------------------------------------------------------
 
 # Check if user exists
 # The following query returns nothing (is empty) if the user does not exist.
-sqlOutput=`./psql.exe -U postgres -tAc "SELECT 1 FROM pg_user WHERE usename =\
-    '$username';"`
+sqlOutput=`"$psql" -U $postgresUser -tAc \
+    "SELECT 1 FROM pg_user WHERE usename = '$username';"`
 
 if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
 then
@@ -34,7 +48,7 @@ then
 else
     # User does no exist
     echo User $username does not exist. Creating a new one.
-    ./createuser.exe --createdb --username postgres --no-createrole \
+    "$createuser" --createdb --username $postgresUser --no-createrole \
 	--unencrypted $username
     # Check for error codes after creating a user
     if [ $? -ne 0 ] ; then
@@ -46,7 +60,8 @@ else
 
 
     echo Changing $username\'s password.
-    ./psql.exe -c "ALTER ROLE $username WITH PASSWORD '$password';" postgres postgres
+    "$psql" -c "ALTER ROLE $username WITH PASSWORD '$password';" $postgresDb \
+	$postgresUser
     # Check for error codes after changing the password of the user
     if [  $? -ne 0 ] ; then
 	echo Changing password exited with errors.
@@ -59,20 +74,148 @@ else
     echo "localhost:5432:*:$username:$password">>$APPDATA/postgresql/pgpass.conf
     if [ $? -ne 0 ] ; then
 	echo Storing password in pgpass.conf exited with errors.
-	exit 
+	exit 2
     fi
     echo Password stored in pgpass.conf succesfully.
-
-    
-
 fi
 
-# Create user
-# ./createuser.exe --createdb --username postgres --no-createrole --unencrypted $username
-# Change password for the created user
+
+# Create copycats database
+echo ----------------------------------------------------------------------------
+
+# Check if database exists
+# The following query returns nothing (is empty) if the databse exist.
+sqlOutput=`"$psql" -U $postgresUser -tAc \
+    "SELECT 1 FROM pg_database WHERE datname = '$database';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Databse exists. No need to create
+    echo Databse $database already exists. No need to create a new one.
+else
+    # Databse does no exist
+    echo Databse $database does not exist. Creating a new one.
+    "$psql" -c "CREATE DATABASE $database" $postgresDb $username
+    
+    if [ $? -ne 0 ] ; then
+	echo Creating a databse $database exited with errors.
+	exit 2
+    fi 
+    echo Database $databse created succesfully.
+fi
 
 
+# Create schemas
+echo ----------------------------------------------------------------------------
 
+# Check if schemas exist
+# tr schema
+# The following query returns nothing (is empty) if the databse exist.
+schema=tr
+sqlOutput=`"$psql" -U $username -d $database -tAc \
+    "SELECT 1 FROM information_schema.schemata WHERE schema_name = '$schema';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Schema exists. No need to create
+    echo Schema $schema already exists. No need to create a new one.
+else
+    #Schema does no exist
+    echo Schema $schema does not exist. Creating a new one.
+    "$psql" -U $username -d $database -c \
+	"CREATE SCHEMA $schema"
+    if [ $? -ne 0 ] ; then
+	echo Creating a schema $schema exited with errors.
+	exit 2
+    fi
+    echo Schema $schema created succesfully.
+fi
+
+# crsp schema
+# The following query returns nothing (is empty) if the databse exist.
+schema=crsp
+sqlOutput=`"$psql" -U $username -d $database -tAc \
+    "SELECT 1 FROM information_schema.schemata WHERE schema_name = '$schema';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Schema exists. No need to create
+    echo Schema $schema already exists. No need to create a new one.
+else
+    # Schema does no exist
+    echo Schema $schema does not exist. Creating a new one.
+    "$psql" -U $username -d $database -c \
+	"CREATE SCHEMA $schema"
+    if [ $? -ne 0 ] ; then
+	echo Creating a schema $schema exited with errors.
+	exit 2
+    fi
+    echo Schema $schema created succesfully.
+fi
+
+
+# Create tables
+echo ----------------------------------------------------------------------------
+
+# Create tr tables
+# Check if tables already exist. (Check only one table and assume that if one
+# table exist, then the other ones too, by the nature of the script: if it has
+# been run once, then all tables should already exist)
+schema=tr
+table=holdings_change
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT 1 FROM information_schema.tables \
+     WHERE table_schema = '$schema' \
+     AND tables.table_name = '$table';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Table exists. No need to create
+    echo Table $schema.$table already exists. No need to create new $schema \
+	tables.
+else
+    # Table does no exist
+    echo Schema $schema.$table does not exist. Creating new tables.
+    "$psql" -U $username -d $database -f "./sql/create-tables-tr.sql"
+    if [ $? -ne 0 ] ; then
+	echo Creating tables in $schema exited with errors.
+	exit 2
+    fi
+    echo Tables in $schema created succesfully. 
+fi
+
+# Create crsp tables
+# Check if tables already exist. (Check only one table and assume that if one
+# table exist, then the other ones too, by the nature of the script: if it has
+# been run once, then all tables should already exist)
+schema=crsp
+table=portfolio_holdings
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT 1 FROM information_schema.tables \
+     WHERE table_schema = '$schema' \
+     AND tables.table_name = '$table';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Table exists. No need to create
+    echo Table $schema.$table already exists. No need to create new $schema \
+	tables.
+else
+    # Table does no exist
+    echo Schema $schema.$table does not exist. Creating new tables.
+    "$psql" -U $username -d $database -f "./sql/create-tables-tr.sql"
+    if [ $? -ne 0 ] ; then
+	echo Creating tables in $schema exited with errors.
+	exit 2
+    fi
+    echo Tables in $schema created succesfully. 
+fi
+
+
+# Populate tables from csv files
+echo ----------------------------------------------------------------------------
 
 
 
