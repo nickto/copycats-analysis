@@ -15,8 +15,9 @@
 # Set up directory locations
 psql=/cygdrive/c/Program\ Files/PostgreSQL/9.5/bin/psql.exe
 createuser=/cygdrive/c/Program\ Files/PostgreSQL/9.5/bin/createuser.exe
-
+zipDir="/cygdrive/c/Program Files/7-zip/"
 copycatsDir=$(pwd)
+copycatsDirWin="D:/Cloud\ Storages/GitHub/copycats-analysis/"
 
 # Set up usernames and passwords (not recommended to change)
 username=copycat
@@ -162,7 +163,7 @@ echo ---------------------------------------------------------------------------
 # table exist, then the other ones too, by the nature of the script: if it has
 # been run once, then all tables should already exist)
 schema=tr
-table=holdings_change
+table=holdings_change # last table in the script
 
 sqlOutput=`"$psql" -U copycat -d copycats -tAc \
     "SELECT 1 FROM information_schema.tables \
@@ -177,7 +178,7 @@ then
 else
     # Table does no exist
     echo Schema $schema.$table does not exist. Creating new tables.
-    "$psql" -U $username -d $database -f "./sql/create-tables-tr.sql"
+    "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Creating tables in $schema exited with errors.
 	exit 2
@@ -190,7 +191,7 @@ fi
 # table exist, then the other ones too, by the nature of the script: if it has
 # been run once, then all tables should already exist)
 schema=crsp
-table=portfolio_holdings
+table=portfolio_holdings # last table in the script
 
 sqlOutput=`"$psql" -U copycat -d copycats -tAc \
     "SELECT 1 FROM information_schema.tables \
@@ -205,7 +206,7 @@ then
 else
     # Table does no exist
     echo Schema $schema.$table does not exist. Creating new tables.
-    "$psql" -U $username -d $database -f "./sql/create-tables-tr.sql"
+    "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Creating tables in $schema exited with errors.
 	exit 2
@@ -216,9 +217,91 @@ fi
 
 # Populate tables from csv files
 echo ----------------------------------------------------------------------------
+export PATH=$PATH:"$zipDir"
+
+# tr
+# Check if tables are already populated. (Again, only check one table)
+schema=tr # last table in the script
+table=holdings_change # last table in the script
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT * FROM $schema.$table LIMIT 1;"`
+
+
+if [ ${#sqlOutput} -ne 0 ] 
+then
+    # Table is populated. Not need to populate again
+    echo $schema.$table contains at least one entry. No need to import data into\
+	$schema tables.
+else
+    # Table is not populated. Need to populate it
+    echo $schema.$table contains no entries. Populating $schema tables.    
+    "$psql" -U $username -d $database -f \
+	"./sql/copy-csv-$schema.sql"
+    if [ $? -ne 0 ] ; then
+	echo Populating $schema tables exited with errrors.
+	exit 2
+    fi
+    echo Tables $schema populated succesfully.
+fi
+
+# crsp
+# Check if tables are already populated. (Again, only check one table)
+schema=crsp # last table in the script
+table=portfolio_holdings # last table in the script 
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT * FROM $schema.$table LIMIT 1;"`
+
+
+if [ ${#sqlOutput} -ne 0 ] 
+then
+    # Table is populated. Not need to populate again
+    echo $schema.$table contains at least one entry. No need to import data into\
+	$schema tables.
+else
+    # Table is not populated. Need to populate it
+    echo $schema.$table contains no entries. Populating $schema tables.    
+
+    # Some of the tables need to be cleaned before they can be imported into 
+    # Postgres
+
+    echo Create temporary files.
+#    zcat ./data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz | \
+#	awk -F, -f ./awk/crsp-daily-return.awk | \
+#	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
+
+    echo Temporary daily returns files created succesfully.
 
 
 
+
+#    "$psql" -U $username -d $database -f \
+#	"\copy crsp.daily_returns FROM PROGRAM \
+#	'7z x `$copycatsDirWin`data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz -so'
+#	DELIMITER ',' 
+#	CSV HEADER ;"
+
+
+    "$psql" -U $username -d $database -f \
+	"./sql/copy-csv-$schema.sql"
+    if [ $? -ne 0 ] ; then
+	echo Populating $schema tables exited with errrors.
+	exit 2
+    fi
+    echo Tables $schema populated succesfully.
+    
+    echo Remove temporaty files.
+    a=0
+#    rm ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
+    a=$(($a + $?))
+
+    if [ $? -ne 0 ] ; then
+	echo Removing temporary files exited with errors.
+	exit 2
+    fi
+    echo Temporary files removed succesfully.
+fi
 
 
 
