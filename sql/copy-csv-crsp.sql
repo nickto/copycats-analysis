@@ -6,4 +6,6 @@
 
 --\copy crsp.fund_dividends FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/raw/wrds-crsp-mfdb-fund-dividends-19601201-201512.csv.gz" -so' DELIMITER ',' CSV HEADER ;
 
-\copy crsp.fund_map FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz" -so' DELIMITER ',' CSV HEADER ;
+--\copy crsp.fund_map FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz" -so' DELIMITER ',' CSV HEADER ;
+
+\copy crsp.fund_summary FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz" -so' DELIMITER ',' CSV HEADER ;

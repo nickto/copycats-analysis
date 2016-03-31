@@ -270,12 +270,18 @@ else
 #    zcat ./data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz | \
 #	awk -F, -f ./awk/crsp-daily-return.awk | \
 #	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
+#    echo Temporary daily returns files created succesfully.
 
-    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
-	'\200-\377' | gzip > \
- 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
+#    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
+#	'\200-\377' | gzip > \
+# 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
+#    echo Temporary fund portfolio map files created succesfully.
     
-    echo Temporary daily returns files created succesfully.
+    zcat ./data/raw/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz | \
+	awk -F, -f ./awk/crsp-fund-summary.awk | \
+	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
+    echo Temporary fund summary files created succesfully.
+
 
 
 
