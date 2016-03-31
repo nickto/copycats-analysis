@@ -10,4 +10,4 @@ SET postgreBin=%3
 :: update pgpass.conf file with the password
 ECHO localhost:5432:*:%username%:%password%>>%APPDATA%\postgresql\pgpass.conf
 
-ECHO If not error messages were shown, user "%username%" created succesfully, the password is set to be "%password%".
+ECHO If no error messages were shown, user "%username%" created succesfully, the password is set to be "%password%".

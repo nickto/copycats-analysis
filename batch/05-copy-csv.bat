@@ -2,6 +2,7 @@
 SET username=%1
 SET postgreBin=%2
 
-%postgreBin%psql.exe -a -f "%~dp0\05-copy-csv-tr.sql" copycats %username%
+::%postgreBin%psql.exe -a -f "%~dp0\05-copy-csv-tr.sql" copycats %username%
+%postgreBin%psql.exe -a -f "%~dp0\05-copy-csv-crsp.sql" copycats %username%
 
 ECHO Tables imported succesfully.
