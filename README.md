@@ -2,7 +2,7 @@
 This repo contains code to perform analysis of performance of strategies that attempt to copy other mutual funds based on reported holdings.
 
 ## Structure
-This repo contains scripts needed to set up a data base and perform analysis. Data base in PostgreSQL is set up using batch files. Analysis is performed using R scripts.
+This repo contains scripts needed to set up a data base and perform analysis. Data base in PostgreSQL is set up using bash script files. Analysis is performed using R scripts.
 
 ## Getting data
 
@@ -17,7 +17,7 @@ Data is downloaded from [WRDS](https://wrds-web.wharton.upenn.edu/) web-site. Th
 Data can be also found [here](https://mega.nz/#F!EhpUlTyR), however, this link is encrypted, because it is probably prohibited to share this data :)
 
 ### Set up database
-Data base is set up in [PostgreSQL 9.5.1](http://www.enterprisedb.com/products-services-training/pgdownload#windows) under Windows 10 operating system. The batch file intended to run is `import-csv-into-database.bat`. It performs the following tasks:
+Data base is set up in [PostgreSQL 9.5.1](http://www.enterprisedb.com/products-services-training/pgdownload#windows) under Windows 10 operating system. The bash script is inteded to run using the cygwin environment setting the working directory to the project directory. The bash script is called [create-databse.sh](./create-database.sh). It performs the following tasks:
 
 1. Creates a user
 2. Creates a data base
@@ -26,22 +26,13 @@ Data base is set up in [PostgreSQL 9.5.1](http://www.enterprisedb.com/products-s
 5. Populates tables with data from .csv files downloaded from WRDS.
 6. Manipulates databases (currently this includes only indexing)
 
-The process can be start at any of the steps, given that previous steps were accomplished previously. In order to do that, run the `import-csv-into-database.bat` file with a one of the following command line options as the first argument:
-
-1. create-user
-2. create-database
-3. create-schemas
-4. create-tables
-5. copy-csv
-6. edit-tables
-
-More arguments can be supplied to the command line, however, it is recommended not to change them.
+The script will skip already accomplished steps automatically.
 
 Batch files, might require additional manual configuration before running them:
 
-- Set PostgreSQL bin folder: in `import-csv-into-database.bat` change `SET postgreBin="C:\Program Files\PostgreSQL\9.5\bin\"` to the appropriate location.
-- Add [7-zip](http://www.7-zip.org/download.html) folder to the variables path: in `import-csv-into-database.bat` change `set PATH=%PATH%;C:\Program Files\7-Zip\"` to the appropriate location.
-- Change path to the `*.csv.gz` files in the `batch/05-copy-csv-tr.sql` (later, `batch/05-copy-csv-crsp.sql` should be added and then paths should be changed there too).
+- Set PostgreSQL bin folder
+- Add [7-zip](http://www.7-zip.org/download.html) folder 
+- Set usernames, passwords, etc for database.
 
 So overall, the minimum input from a user to set up a database is to install PostgreSQL, 7-zip and change paths described above.
 
@@ -59,6 +50,6 @@ Analysis is yet to be done
 
 ## TO-DO:
 
-- Rewrite BATCHs as bash scipts!!!
+- ~~Rewrite BATCHs as bash scipts!!!~~
 - Import CRSP data into databse
 - Perform analysis :)
