@@ -1,6 +1,12 @@
 :: Usage: 
 :: This batch file accepts 3
-:: %~1 - step at which to start (create-user, create-database, create-table, create-nothing)
+:: %~1 - step at which to start:
+::          - create-user
+::          - create-database
+::          - create-schemas
+::          - create-tables
+::          - copy-csv
+::          - edit-tables
 :: %~2 - username of user to create-database (recommended to leave default)
 :: %~3 - password of user to create (recommended to leave default)
 :: %~4 - location of the bin folder of PostgreSQL (recommended to change in the file)

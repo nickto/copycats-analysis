@@ -59,5 +59,6 @@ Analysis is yet to be done
 
 ## TO-DO:
 
+- Rewrite BATCHs as bash scipts!!!
 - Import CRSP data into databse
 - Perform analysis :)
