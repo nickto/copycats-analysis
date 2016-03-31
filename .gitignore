@@ -6,6 +6,7 @@
 /bin/
 /data/
 /export/
+/archive/
 
 /test/**
 //*.zip
