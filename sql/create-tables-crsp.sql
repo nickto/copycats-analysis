@@ -172,7 +172,7 @@ crsp.portfolio_holdings (
 );
 
 CREATE TABLE
-crsp.portfolio_holdings (
+crsp.rear_load (
     crsp_fundno INTEGER,
     rear_group_no INTEGER,
     begdt DATE,
