@@ -35,7 +35,7 @@ postgresDb=postgres
 # cd "$psqlDir"
 
 # Create a user
-echo ----------------------------------------------------------------------------
+echo ---------------------------------------------------------------------------
 
 # Check if user exists
 # The following query returns nothing (is empty) if the user does not exist.
@@ -82,7 +82,7 @@ fi
 
 
 # Create copycats database
-echo ----------------------------------------------------------------------------
+echo ---------------------------------------------------------------------------
 
 # Check if database exists
 # The following query returns nothing (is empty) if the databse exist.
@@ -107,7 +107,7 @@ fi
 
 
 # Create schemas
-echo ----------------------------------------------------------------------------
+echo ---------------------------------------------------------------------------
 
 # Check if schemas exist
 # tr schema
@@ -156,7 +156,7 @@ fi
 
 
 # Create tables
-echo ----------------------------------------------------------------------------
+echo ---------------------------------------------------------------------------
 
 # Create tr tables
 # Check if tables already exist. (Check only one table and assume that if one
@@ -177,7 +177,7 @@ then
 	tables.
 else
     # Table does no exist
-    echo Schema $schema.$table does not exist. Creating new tables.
+    echo Table $schema.$table does not exist. Creating new tables.
     "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Creating tables in $schema exited with errors.
@@ -205,7 +205,7 @@ then
 	tables.
 else
     # Table does no exist
-    echo Schema $schema.$table does not exist. Creating new tables.
+    echo Table $schema.$table does not exist. Creating new tables.
     "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Creating tables in $schema exited with errors.
@@ -216,7 +216,7 @@ fi
 
 
 # Populate tables from csv files
-echo ----------------------------------------------------------------------------
+echo ---------------------------------------------------------------------------
 export PATH=$PATH:"$zipDir"
 
 # tr
