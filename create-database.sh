@@ -236,6 +236,16 @@ then
 else
     # Table is not populated. Need to populate it
     echo $schema.$table contains no entries. Populating $schema tables.    
+
+    # Some of the tables need to be cleaned before they can be imported into 
+    # Postgres
+    echo Create temporary files.
+    zcat ./data/raw/wrds-tr-s12-type1-197901-201509.csv.gz | tr -d \
+	'\200-\377' | gzip > \
+ 	./data/clean/wrds-tr-s12-type1-197901-201509.csv.gz
+    echo Temporary type 1 data files created succesfully.
+
+
     "$psql" -U $username -d $database -f \
 	"./sql/copy-csv-$schema.sql"
     if [ $? -ne 0 ] ; then
@@ -243,6 +253,15 @@ else
 	exit 2
     fi
     echo Tables $schema populated succesfully.
+
+    echo Remove temporary files
+    rm ./data/clean/wwrds-tr-s12-type1-197901-20150.csv.gz
+
+    if [ $? -ne 0 ] ; then
+	echo Removing temporary files exited with errors.
+	exit 2
+    fi
+    echo Temporary tr files removed succesfully.
 fi
 
 # crsp
@@ -310,7 +329,7 @@ else
 	echo Removing temporary files exited with errors.
 	exit 2
     fi
-    echo Temporary files removed succesfully.
+    echo Temporary crsp files removed succesfully.
 fi
 
 
