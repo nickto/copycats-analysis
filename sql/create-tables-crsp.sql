@@ -162,15 +162,15 @@ crsp.portfolio_holdings (
     report_dt DATE,
     security_rank INTEGER,
     eff_dt DATE,
-    percent_tna NUMERIC(5,3),
-    nbr_shares INTEGER,
+    percent_tna NUMERIC(10,3),
+    nbr_shares NUMERIC(18,2),
     market_val NUMERIC(16,2),
     security_name VARCHAR(200),
     cusip VARCHAR(10),
     permno INTEGER,
     permco INTEGER,
     ticker VARCHAR(6),
-    coupon NUMERIC(5,3),
+    coupon NUMERIC(12,3),
     maturity_dt DATE
 );
 

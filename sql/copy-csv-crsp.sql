@@ -10,4 +10,6 @@
 
 --\copy crsp.fund_summary FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz" -so' DELIMITER ',' CSV HEADER; 
 
-\copy crsp.monthly_returns FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz" -so' DELIMITER ',' CSV HEADER; 
+--\copy crsp.monthly_returns FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz" -so' DELIMITER ',' CSV HEADER; 
+
+\copy crsp.portfolio_holdings FROM PROGRAM '7z x "D:/Cloud Storages/GitHub/copycats-analysis/data/clean/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz" -so' DELIMITER ',' CSV HEADER; 

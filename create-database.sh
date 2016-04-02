@@ -267,11 +267,10 @@ fi
 # crsp
 # Check if tables are already populated. (Again, only check one table)
 schema=crsp # last table in the script
-table=portfolio_holdings # last table in the script 
+table=rear_load # last table in the script 
 
 sqlOutput=`"$psql" -U copycat -d copycats -tAc \
     "SELECT * FROM $schema.$table LIMIT 1;"`
-
 
 if [ ${#sqlOutput} -ne 0 ] 
 then
@@ -317,15 +316,21 @@ else
 
     # Monthly returns
     # Replace incorrect missing values characters with nothin
+#    zcat ./data/raw/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz | \
+#	awk -F, -f ./awk/crsp-monthly-return.awk | \
+#	gzip > ./data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz
+#    echo Temporary daily returns file created succesfully.
 
-    zcat ./data/raw/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz | \
-	awk -F, -f ./awk/crsp-monthly-return.awk | \
-	gzip > ./data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz
-    echo Temporary daily returns files created succesfully.
+    # Portfolio holdings
+    # Clean from non-ASCII characters
+#    zcat ./data/raw/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz | \
+#	tr -d '\200-\377' | gzip > \
+#	./data/clean/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz 
+    echo Temporary portfolio holdings file created succesfuly.
 
-
-     "$psql" -U $username -d $database -f \
-	"./sql/copy-csv-$schema.sql"
+    echo Import data
+    "$psql" -U $username -d $database -f \
+    "./sql/copy-csv-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Populating $schema tables exited with errrors.
 	exit 2
