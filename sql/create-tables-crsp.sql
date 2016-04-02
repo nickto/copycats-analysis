@@ -17,8 +17,8 @@ CREATE TABLE
 crsp.daily_returns (
     crsp_fundno INTEGER,
     caldt DATE,
-    dnav NUMERIC(8),
-    dret NUMERIC(8)
+    dnav NUMERIC(16,8),
+    dret NUMERIC(16,8)
 );
 
 CREATE TABLE
@@ -28,7 +28,7 @@ crsp.front_load(
     begdt DATE,
     enddt DATE,
     dollar_amt INTEGER,
-    front_load NUMERIC(5)
+    front_load NUMERIC(6,4)
 );
 
 CREATE TABLE
@@ -36,9 +36,9 @@ crsp.fund_dividends (
     crsp_fundno INTEGER,
     caldt DATE,
     dis_type VARCHAR(2),
-    dis_amt NUMERIC(12),
-    reinvest_nav NUMERIC(10),
-    spl_ratio NUMERIC(8)
+    dis_amt NUMERIC(13,11),
+    reinvest_nav NUMERIC(16,8),
+    spl_ratio NUMERIC(13,11)
 );
 
 
@@ -72,34 +72,36 @@ crsp.fund_summary(
     summary_period2 VARCHAR(2),
     crsp_fundno INTEGER,
     caldt DATE,
-    nav_latest NUMERIC(10),
+    nav_latest NUMERIC(16,8),
     nav_latest_dt DATE,
-    tna_latest NUMERIC(10),
+    tna_latest NUMERIC(16,9),
     tna_latest_dt DATE,
-    yield NUMERIC(10),
-    div_ytd NUMERIC(12),
-    cap_gains_ytd NUMERIC(12),
-    nav_52w_h NUMERIC(10),
+    yield NUMERIC(12,10),
+--    div_ytd NUMERIC(12,10),
+    div_ytd REAL,
+--    cap_gains_ytd NUMERIC(12,10),
+    cap_gains_ytd REAL,
+    nav_52w_h NUMERIC(16,8),
     nav_52w_h_dt DATE,
-    nav_52w_l NUMERIC(10),
+    nav_52w_l NUMERIC(16,8),
     nav_52w_l_dt DATE,
     unrealized_app_dep REAL,
     unrealized_app_dt DATE,
     asset_dt DATE,
-    per_com NUMERIC(5),
-    per_pref NUMERIC(5),
-    per_conv NUMERIC(5),
-    per_corp NUMERIC(5),
-    per_muni NUMERIC(5),
-    per_govt NUMERIC(5),
-    per_oth NUMERIC(5),
-    per_cash NUMERIC(5),
-    per_bond NUMERIC(5),
-    per_abs NUMERIC(5),
-    per_mbs NUMERIC(5),
-    per_eq_oth NUMERIC(5),
-    per_fi_oth NUMERIC(5),
-    maturity NUMERIC(3),
+    per_com NUMERIC(10,3),
+    per_pref NUMERIC(10,3),
+    per_conv NUMERIC(10,3),
+    per_corp NUMERIC(10,3),
+    per_muni NUMERIC(10,3),
+    per_govt NUMERIC(10,3),
+    per_oth NUMERIC(10,3),
+    per_cash NUMERIC(10,3),
+    per_bond NUMERIC(10,3),
+    per_abs NUMERIC(10,3),
+    per_mbs NUMERIC(10,3),
+    per_eq_oth NUMERIC(10,3),
+    per_fi_oth NUMERIC(10,3),
+    maturity NUMERIC(4,1),
     maturity_dt DATE,
     cusip8 VARCHAR(10),
     crsp_portno INTEGER,
@@ -124,11 +126,12 @@ crsp.fund_summary(
     end_dt DATE,
     dead_flag VARCHAR(1),
     merge_fundno INTEGER,
-    actual_12b1 NUMERIC(8),
-    max_12b1 NUMERIC(8),
-    exp_ratio NUMERIC(8),
-    mgmt_fee NUMERIC(8)  ,
-    turn_ratio NUMERIC(8),
+    actual_12b1 NUMERIC(10,6),
+    max_12b1 NUMERIC(10,6),
+    exp_ratio NUMERIC(10,6),
+    mgmt_fee NUMERIC(16,6)  ,
+    turn_ratio REAL,
+--    turn_ratio NUMERIC(10,6),
     fiscal_yearend DATE,
     crsp_obj_cd VARCHAR(4),
     si_obj_cd VARCHAR(3),
@@ -148,9 +151,9 @@ CREATE TABLE
 crsp.monthly_returns (
     caldt DATE,
     crsp_fundno INTEGER,
-    mtna NUMERIC(8),
-    mret NUMERIC(8),
-    mnav NUMERIC(8)
+    mtna NUMERIC(8,4),
+    mret NUMERIC(10,6),
+    mnav NUMERIC(16,8)
 );
 
 CREATE TABLE
@@ -159,15 +162,15 @@ crsp.portfolio_holdings (
     report_dt DATE,
     security_rank INTEGER,
     eff_dt DATE,
-    percent_tna NUMERIC(5),
+    percent_tna NUMERIC(5,3),
     nbr_shares INTEGER,
-    market_val NUMERIC(9),
+    market_val NUMERIC(16,2),
     security_name VARCHAR(200),
     cusip VARCHAR(10),
     permno INTEGER,
     permco INTEGER,
     ticker VARCHAR(6),
-    coupon NUMERIC(5),
+    coupon NUMERIC(5,3),
     maturity_dt DATE
 );
 
@@ -180,5 +183,5 @@ crsp.rear_load (
     load_type VARCHAR(1),
     inv_lvl INTEGER,
     time_period INTEGER,
-    rear_load NUMERIC(6)
+    rear_load NUMERIC(6,4)
 );

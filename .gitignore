@@ -12,3 +12,4 @@
 //*.zip
 *.Rproj.user/
 .Rproj.user
+*.swp
