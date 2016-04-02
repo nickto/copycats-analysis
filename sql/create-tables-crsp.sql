@@ -151,7 +151,7 @@ CREATE TABLE
 crsp.monthly_returns (
     caldt DATE,
     crsp_fundno INTEGER,
-    mtna NUMERIC(8,4),
+    mtna NUMERIC(16,8),
     mret NUMERIC(10,6),
     mnav NUMERIC(16,8)
 );

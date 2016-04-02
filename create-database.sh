@@ -286,48 +286,45 @@ else
     # Postgres
 
     echo Create temporary files.
+    # Daily returns
     # Replace incorrect missing value characters with nothing
 #    zcat ./data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz | \
 #	awk -F, -f ./awk/crsp-daily-return.awk | \
 #	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
-#    echo Temporary daily returns files created succesfully.
+#    echo Temporary clean daily returns file created succesfully.
 
+    # Fund portfolio map
     # Clean file from non-ASCII characters
 #    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
 #	'\200-\377' | gzip > \
 # 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
-#    echo Temporary fund portfolio map files created succesfully.
+#    echo Temporary clean fund portfolio map file created succesfully.
     
+    # Fund summary
     # Change three quotes to one quote and clean from non-ASCII characters
     TEMP=$(mktemp)
-    zcat ./data/raw/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz | \
-	sed -e 's/\"\"\"/\"/g' | tr -d '\200-\377' | gzip > $TEMP
-    echo Temporary file with removed excess quotation created.
-    zcat $TEMP | \
-#	awk -F, -f ./awk/crsp-fund-summary.awk | \
-#	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
 #    zcat ./data/raw/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz | \
-#	awk -F, -f ./awk/crsp-fund-summary.awk | \
+#	sed -e 's/\"\"\"/\"/g' | tr -d '\200-\377' | gzip > $TEMP
+#    echo Temporary file with removed excess quotation created.
+    # Replace incorrect missing values characters with nothing
+#    zcat $TEMP | \
+#	awk -vFPAT='[^,]*|"[^"]*"' -f./awk/crsp-fund-summary.awk | \
 #	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
-    zcat $TEMP | \
-	awk -vFPAT='[^,]*|"[^"]*"' -f./awk/crsp-fund-summary.awk | \
-	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
-    echo Temporary fund summary files created succesfully.
-    rm $TEMP
-    echo Temporary file with removed excess quotation removed.
+#    echo Temporary fund summary files created succesfully.
+#    rm $TEMP
+#    echo Temporary file with removed excess quotation removed.
+#    echo Temporary clean fund summary file created succesfully.
+
+    # Monthly returns
+    # Replace incorrect missing values characters with nothin
+
+    zcat ./data/raw/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz | \
+	awk -F, -f ./awk/crsp-monthly-return.awk | \
+	gzip > ./data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz
+    echo Temporary daily returns files created succesfully.
 
 
-# FS='", "|^"|"$'
-
-
-#    "$psql" -U $username -d $database -f \
-#	"\copy crsp.daily_returns FROM PROGRAM \
-#	'7z x `$copycatsDirWin`data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz -so'
-#	DELIMITER ',' 
-#	CSV HEADER ;"
-
-
-    "$psql" -U $username -d $database -f \
+     "$psql" -U $username -d $database -f \
 	"./sql/copy-csv-$schema.sql"
     if [ $? -ne 0 ] ; then
 	echo Populating $schema tables exited with errrors.
