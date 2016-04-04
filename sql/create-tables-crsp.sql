@@ -182,6 +182,6 @@ crsp.rear_load (
     enddt DATE,
     load_type VARCHAR(1),
     inv_lvl INTEGER,
-    time_period INTEGER,
+    time_period NUMERIC(10,2),
     rear_load NUMERIC(6,4)
 );
