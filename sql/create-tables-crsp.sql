@@ -36,9 +36,9 @@ crsp.fund_dividends (
     crsp_fundno INTEGER,
     caldt DATE,
     dis_type VARCHAR(2),
-    dis_amt NUMERIC(13,11),
+    dis_amt NUMERIC(16,11),
     reinvest_nav NUMERIC(16,8),
-    spl_ratio NUMERIC(13,11)
+    spl_ratio NUMERIC(16,11)
 );
 
 

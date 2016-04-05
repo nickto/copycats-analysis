@@ -255,7 +255,7 @@ else
     echo Tables $schema populated succesfully.
 
     echo Remove temporary files
-    rm ./data/clean/wwrds-tr-s12-type1-197901-20150.csv.gz
+    rm ./data/clean/*
 
     if [ $? -ne 0 ] ; then
 	echo Removing temporary files exited with errors.
@@ -287,45 +287,45 @@ else
     echo Create temporary files.
     # Daily returns
     # Replace incorrect missing value characters with nothing
-#    zcat ./data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz | \
-#	awk -F, -f ./awk/crsp-daily-return.awk | \
-#	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
-#    echo Temporary clean daily returns file created succesfully.
+    zcat ./data/raw/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz | \
+	awk -F, -f ./awk/crsp-daily-return.awk | \
+	gzip > ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
+    echo Temporary clean daily returns file created succesfully.
 
     # Fund portfolio map
     # Clean file from non-ASCII characters
-#    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
-#	'\200-\377' | gzip > \
-# 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
-#    echo Temporary clean fund portfolio map file created succesfully.
+    zcat ./data/raw/wrds-crsp-mfdb-fund-portfolio-map.csv.gz | tr -d \
+	'\200-\377' | gzip > \
+ 	./data/clean/wrds-crsp-mfdb-fund-portfolio-map.csv.gz
+    echo Temporary clean fund portfolio map file created succesfully.
     
     # Fund summary
     # Change three quotes to one quote and clean from non-ASCII characters
     TEMP=$(mktemp)
-#    zcat ./data/raw/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz | \
-#	sed -e 's/\"\"\"/\"/g' | tr -d '\200-\377' | gzip > $TEMP
-#    echo Temporary file with removed excess quotation created.
+    zcat ./data/raw/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz | \
+	sed -e 's/\"\"\"/\"/g' | tr -d '\200-\377' | gzip > $TEMP
+    echo Temporary file with removed excess quotation created.
     # Replace incorrect missing values characters with nothing
-#    zcat $TEMP | \
-#	awk -vFPAT='[^,]*|"[^"]*"' -f./awk/crsp-fund-summary.awk | \
-#	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
-#    echo Temporary fund summary files created succesfully.
-#    rm $TEMP
-#    echo Temporary file with removed excess quotation removed.
-#    echo Temporary clean fund summary file created succesfully.
+    zcat $TEMP | \
+	awk -vFPAT='[^,]*|"[^"]*"' -f./awk/crsp-fund-summary.awk | \
+	gzip > ./data/clean/wrds-crsp-mfdb-fund-summary-196112-2015-12.csv.gz
+    echo Temporary fund summary files created succesfully.
+    rm $TEMP
+    echo Temporary file with removed excess quotation removed.
+    echo Temporary clean fund summary file created succesfully.
 
     # Monthly returns
     # Replace incorrect missing values characters with nothin
-#    zcat ./data/raw/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz | \
-#	awk -F, -f ./awk/crsp-monthly-return.awk | \
-#	gzip > ./data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz
-#    echo Temporary daily returns file created succesfully.
+    zcat ./data/raw/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz | \
+	awk -F, -f ./awk/crsp-monthly-return.awk | \
+	gzip > ./data/clean/wrds-crsp-mfdb-monthly-returns-196112-2015-12.csv.gz
+    echo Temporary daily returns file created succesfully.
 
     # Portfolio holdings
     # Clean from non-ASCII characters
-#    zcat ./data/raw/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz | \
-#	tr -d '\200-\377' | gzip > \
-#	./data/clean/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz 
+    zcat ./data/raw/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz | \
+	tr -d '\200-\377' | gzip > \
+	./data/clean/wrds-crsp-mfdb-portfolio-holdings-200101-2015-12.csv.gz 
     echo Temporary portfolio holdings file created succesfuly.
 
     echo Import data
@@ -337,10 +337,8 @@ else
     fi
     echo Tables $schema populated succesfully.
     
-    echo Remove temporaty files.
-    a=0
-#    rm ./data/clean/wrds-crsp-mfdb-daily-returns-19980901-20151231.csv.gz
-    a=$(($a + $?))
+    echo Remove temporary files
+    rm ./data/clean/*
 
     if [ $? -ne 0 ] ; then
 	echo Removing temporary files exited with errors.
@@ -349,6 +347,14 @@ else
     echo Temporary crsp files removed succesfully.
 fi
 
+
+# Index tables
+echo ---------------------------------------------------------------------------
+
+# Create table indeces
+echo Create indeces
+
+"$psql" -U $username -d $database -f './sql/index-tables.sql'
 
 
 
