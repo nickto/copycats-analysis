@@ -6,3 +6,7 @@ SELECT DISTINCT
 FROM tr.holdings
 "
 cusipList <- dbGetQuery(con, sql_command)
+write.table(cusipList, file = "cusip-list.txt",
+            quote = FALSE, sep = " ",
+            row.names = FALSE,
+            col.names = FALSE)
