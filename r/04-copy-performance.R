@@ -1,4 +1,4 @@
-source("02-connect-to-db.R")
+source("./r/02-connect-to-db.R")
 
 
 sql_command <- "

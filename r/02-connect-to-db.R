@@ -1,4 +1,4 @@
-source("./00-load-packages.R")
+source("./r/00-load-packages.R")
 
 # create a connection
 # save the password that we can "hide" it as best as we can by collapsing it
