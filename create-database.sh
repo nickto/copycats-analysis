@@ -154,6 +154,28 @@ else
     echo Schema $schema created succesfully.
 fi
 
+# mflinks schema
+# The following query returns nothing (is empty) if the databse exist.
+schema=mflinks
+sqlOutput=`"$psql" -U $username -d $database -tAc \
+    "SELECT 1 FROM information_schema.schemata WHERE schema_name = '$schema';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Schema exists. No need to create
+    echo Schema $schema already exists. No need to create a new one.
+else
+    # Schema does no exist
+    echo Schema $schema does not exist. Creating a new one.
+    "$psql" -U $username -d $database -c \
+        "CREATE SCHEMA $schema"
+    if [ $? -ne 0 ] ; then
+        echo Creating a schema $schema exited with errors.
+        exit 2
+    fi
+    echo Schema $schema created succesfully.
+fi
+
 
 # Create tables
 echo ---------------------------------------------------------------------------
@@ -212,6 +234,34 @@ else
 	exit 2
     fi
     echo Tables in $schema created succesfully. 
+fi
+
+# Create mflinks tables
+# Check if tables already exist. (Check only one table and assume that if one
+# table exist, then the other ones too, by the nature of the script: if it has
+# been run once, then all tables should already exist)
+schema=mflinks
+table=link2 # last table in the script
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT 1 FROM information_schema.tables \
+     WHERE table_schema = '$schema' \
+     AND tables.table_name = '$table';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Table exists. No need to create
+    echo Table $schema.$table already exists. No need to create new $schema \
+        tables.
+else
+    # Table does no exist
+    echo Table $schema.$table does not exist. Creating new tables.
+    "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
+    if [ $? -ne 0 ] ; then
+        echo Creating tables in $schema exited with errors.
+        exit 2
+    fi
+    echo Tables in $schema created succesfully.
 fi
 
 
@@ -345,6 +395,50 @@ else
 	exit 2
     fi
     echo Temporary crsp files removed succesfully.
+fi
+
+# mflinks
+# Check if tables are already populated. (Again, only check one table)
+schema=mflinks # last table in the script
+table=link2 # last table in the script
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT * FROM $schema.$table LIMIT 1;"`
+
+
+if [ ${#sqlOutput} -ne 0 ]
+then
+    # Table is populated. Not need to populate again
+    echo $schema.$table contains at least one entry. No need to import data into\
+        $schema tables.
+else
+    # Table is not populated. Need to populate it
+    echo $schema.$table contains no entries. Populating $schema tables.
+
+    # Clean file from non-ASCII characters
+    cat ./data/mflinks/link1.csv | tr -d '\200-\377' | \
+        sed 's/,"/,QUOTEPLACEHOLDER/g' | \
+        sed 's/",/QUOTEPLACEHOLDER,/g' | \
+        sed 's/"$/QUOTEPLACEHOLDER/g' | \
+        sed 's/"//g'        | \
+        sed 's/QUOTEPLACEHOLDER/"/g' > \
+        ./data/clean/link1.csv
+    echo Temporary clean link1 file created succesfully.
+    cat ./data/mflinks/link2.csv | tr -d '\200-\377' > \
+        ./data/clean/link2.csv
+    echo Temporary clean link2 file created succesfully.
+
+    "$psql" -U $username -d $database -f \
+        "./sql/copy-csv-$schema.sql"
+    if [ $? -ne 0 ] ; then
+        echo Populating $schema tables exited with errrors.
+        exit 2
+    fi
+    echo Tables $schema populated succesfully.
+
+
+    echo Remove temporary files
+    rm ./data/clean/*
 fi
 
 

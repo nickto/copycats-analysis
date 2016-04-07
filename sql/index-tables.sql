@@ -42,8 +42,18 @@ CREATE INDEX ON crsp.monthly_returns(caldt);
 
 CREATE INDEX ON crsp.portfolio_holdings(crsp_portno);
 CREATE INDEX ON crsp.portfolio_holdings(report_dt);
+CREATE INDEX ON crsp.portfolio_holdings(eff_dt);
 
 CREATE INDEX ON crsp.rear_load(crsp_fundno);
 CREATE INDEX ON crsp.rear_load(rear_group_no);
 CREATE INDEX ON crsp.rear_load(begdt);
 CREATE INDEX ON crsp.rear_load(enddt);
+
+-- Create MFLINKS indeces
+CREATE INDEX ON mflinks.link1(fundno);
+CREATE INDEX ON mflinks.link1(wfcin);
+CREATE INDEX ON mflinks.link1(fdate);
+CREATE INDEX ON mflinks.link2(crsp_fundno);
+CREATE INDEX ON mflinks.link2(wfcin);
+CREATE INDEX ON mflinks.link2(ncusip);
+CREATE INDEX ON mflinks.link2(cusip8);
