@@ -176,6 +176,27 @@ else
     echo Schema $schema created succesfully.
 fi
 
+# stocks schema
+# The following query returns nothing (is empty) if the databse exist.
+schema=stocks
+sqlOutput=`"$psql" -U $username -d $database -tAc \
+    "SELECT 1 FROM information_schema.schemata WHERE schema_name = '$schema';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Schema exists. No need to create
+    echo Schema $schema already exists. No need to create a new one.
+else
+    # Schema does no exist
+    echo Schema $schema does not exist. Creating a new one.
+    "$psql" -U $username -d $database -c \
+        "CREATE SCHEMA $schema"
+    if [ $? -ne 0 ] ; then
+        echo Creating a schema $schema exited with errors.
+        exit 2
+    fi
+    echo Schema $schema created succesfully.
+fi
 
 # Create tables
 echo ---------------------------------------------------------------------------
@@ -242,6 +263,34 @@ fi
 # been run once, then all tables should already exist)
 schema=mflinks
 table=link2 # last table in the script
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT 1 FROM information_schema.tables \
+     WHERE table_schema = '$schema' \
+     AND tables.table_name = '$table';"`
+
+if [[ ${#sqlOutput} -gt 0 || $sqlOutput == "1" ]]
+then
+    # Table exists. No need to create
+    echo Table $schema.$table already exists. No need to create new $schema \
+        tables.
+else
+    # Table does no exist
+    echo Table $schema.$table does not exist. Creating new tables.
+    "$psql" -U $username -d $database -f "./sql/create-tables-$schema.sql"
+    if [ $? -ne 0 ] ; then
+        echo Creating tables in $schema exited with errors.
+        exit 2
+    fi
+    echo Tables in $schema created succesfully.
+fi
+
+# Create mflinks tables
+# Check if tables already exist. (Check only one table and assume that if one
+# table exist, then the other ones too, by the nature of the script: if it has
+# been run once, then all tables should already exist)
+schema=stocks
+table=daily # last table in the script
 
 sqlOutput=`"$psql" -U copycat -d copycats -tAc \
     "SELECT 1 FROM information_schema.tables \
@@ -436,12 +485,57 @@ else
     fi
     echo Tables $schema populated succesfully.
 
+    echo Remove temporary files
+    rm ./data/clean/*
+    if [ $? -ne 0] ; then
+	echo Removing temporary files exitted with errors.
+	exit 2;    
+    fi
+    echo Temporary files removed succesfully.
+fi
+
+# stocks
+# Check if tables are already populated. (Again, only check one table)
+schema=stocks # last table in the script
+table=daily # last table in the script
+
+sqlOutput=`"$psql" -U copycat -d copycats -tAc \
+    "SELECT * FROM $schema.$table LIMIT 1;"`
+
+
+if [ ${#sqlOutput} -ne 0 ]
+then
+    # Table is populated. Not need to populate again
+    echo $schema.$table contains at least one entry. No need to import data into\
+        $schema tables.
+else
+    # Table is not populated. Need to populate it
+    echo $schema.$table contains no entries. Populating $schema tables.
+
+    # Replace incorrect missing values characters with nothing
+    echo Create temporary daily returns file.
+    zcat ./data/raw/wrds-crsp-stocks-daily-19900101-20153112.csv.gz | \
+	awk -F, -f ./awk/crsp-stocks-daily.awk | \
+	gzip > ./data/clean/wrds-crsp-stocks-daily-19900101-20153112.csv.gz
+    echo Temporary daily returns file created succesfully.
+   
+     "$psql" -U $username -d $database -f \
+        "./sql/copy-csv-$schema.sql"
+    if [ $? -ne 0 ] ; then
+        echo Populating $schema tables exited with errrors.
+        exit 2
+    fi
+    echo Tables $schema populated succesfully.
 
     echo Remove temporary files
     rm ./data/clean/*
+    if [ $? -ne 0] ; then
+	echo Removing temporary files exitted with errors.
+	exit 2;    
+    fi
+    echo Temporary files removed succesfully.
+
 fi
-
-
 # Index tables
 echo ---------------------------------------------------------------------------
 
