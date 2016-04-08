@@ -460,6 +460,43 @@ Data request summary:
 | Extra Variables and Parameters Selected | |
 
 
+## CRSP stock data
+### CRSP Daily Stock
+This data was extracted on 2016-04-08.
+
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your date range.** | Date range | `1990-01-01`--`2015-12-31` |
+| **Step 2: Apply your company codes.** | Select an option for entering company codes | Upload a `cusip-list.txt` file that results from running `03-export-cusips.R` |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 2: Query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-stocks-19900101-20151231.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | c15756b0ac0282d7 |
+| Libraries/Data Sets | crspa/dsf  / |
+| Frequency/Date Range | day / 01Jan1990 - 31Dec2015 |
+| Search Variable | CUSIP |
+| Input Codes all item(s) 55555 item(s) | `31806710 -etc-` |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | CUSIP NCUSIP COMNAM TICKER PERMCO SHRCD SHRCLS ISSUNO EXCHCD HEXCD SICCD HSICCD HSICMG HSICIG NAMEENDT TSYMBOL NAICS PRIMEXCH TRDSTAT SECSTAT PRC VOL OPENPRC ASKHI BIDLO BID ASK NUMTRD RET RETX SHROUT SHRFLG |
+| Extra Variables and Parameters Selected | |
+
+
+## MFLINKS
+We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method.
 
 
 
@@ -470,7 +507,7 @@ Data request summary:
 
 ## Variable description
 ### Thomson Reuters Mutual Fund Holdings
-Some of the information, including the relationship between four types can found [here](./data-description/raw/tr-mfh/wrds-overview-of-thomson-reuters-mutual-fund-and-investment-company-data.pdf) and [here](./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf).
+Some of the information, including the relationship between four types can found [here](../data-description/raw/tr-mfh/wrds-overview-of-thomson-reuters-mutual-fund-and-investment-company-data.pdf) and [here](../data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf).
 
 #### Type 1: fund characteristics
 Thomson Reuters Mutual Fund Holdings - Type 1: Fund Characteristics
@@ -567,7 +604,7 @@ Variable Reference
 
 
 ### CRSP Mutual Fund Database
-Some of the information, including the relationship between four types can found [here](crsp-mfdb-guide.pdf).
+Some of the information, including the relationship between four types can found [here](../data-description/raw/crsp-mfdb/crsp-mfdb-guide.pdf).
 
 #### Fund summary
 CRSP Mutual Funds - Summary
@@ -838,7 +875,82 @@ Variable Reference
 | zip | Management Company Zip Code |
 
 
+### CRSP Stock Data
+#### Type 4: change in holdings
+Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics
 
+| Key | Value |
+| --- | --- |
+| Library: | crspa |
+| File: | dsf |
+| Data Range: | 12/31/1925 - 12/31/2015 |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Annually |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| accomp | Acquiring PERMCO | 
+| acperm | Acquiring PERMNO |
+| ask | Closing Ask | 
+| askhi | Ask or High |
+| bid | Closing Bid |
+| bidlo | Bid or Low |
+| cfacpr | Cumulative Factor to Adjust Price |
+| cfacshr | Cumulative Factor to Adjust Shares |
+| comnam | Company Name |
+| cusip | Cusip |
+| dclrdt | Declaration Date |
+| distcd | Distribution Code |
+| divamt | Dividend Cash Amount |
+| dlamt | Amount After Delisting |
+| dlpdt | Date of Delisting Payment |
+| dlprc | Delisting Price |
+| dlret | Delisting Return |
+| dlretx | Delisting Return without Dividends |
+| dlstcd | Delisting Code |
+| ewretd | Equal-Weighted Return (includes distributions) |
+| ewretx | Equal-Weighted Return (excluding dividends) |
+| exchcd | Exchange Code |
+| facpr | Factor to Adjust Price |
+| facshr | Factor to Adjust Shares |
+| hexcd | Header Exchange Code |
+| hsiccd | Header SIC Code |
+| hsicig | Header SIC Industry Group |
+| hsicmg | Header SIC Major Group |
+| issuno | Nasdaq Issue Number |
+| mmcnt | Market Maker Count |
+| naics | North American Industry Class System |
+| nameendt | Names Ending Date |
+| ncusip | Ncusip |
+| nextdt | Date of Next Available Information |
+| nmsind | National Market Indicator |
+| nsdinx | NASD Index |
+| numtrd | Number of Trades |
+| nwperm | New CRSP Permno |
+| openprc | Open Price |
+| paydt | Payment Date |
+| permc | CRSP Permanent Company Number |
+| prc | Price |
+| primexch | Primary Exchange |
+| rcrddt | Record Date |
+| ret | Holding Period Return |
+| retx | Return without Dividends |
+| secstat | Security Status |
+| shrcd | Share Code |
+| shrcls | Share Class |
+| shrflg | Share Flag |
+| shrout | Number of Shares Outstanding |
+| siccd | SIC Code |
+| sprtrn | Return on S&P Composite Index |
+| ticker | Ticker |
+| trdstat | Trading Status |
+| trtscd | Traits Code |
+| tsymbol | Trading Symbol |
+| vol | Share Volume |
+| vwretd | Value-Weighted Return (includes distributions) |
+| vwretx | Value-Weighted Return (excluding dividends) |
 
 
 

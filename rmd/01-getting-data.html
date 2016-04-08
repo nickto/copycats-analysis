@@ -1571,11 +1571,131 @@ blockquote {
 </div>
 </div>
 </div>
+<div id="crsp-stock-data" class="section level2">
+<h2>CRSP stock data</h2>
+<div id="crsp-daily-stock" class="section level3">
+<h3>CRSP Daily Stock</h3>
+<p>This data was extracted on 2016-04-08.</p>
+<div id="query-form-13" class="section level4">
+<h4>Query form</h4>
+<table style="width:28%;">
+<colgroup>
+<col width="6%"></col>
+<col width="11%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Step</th>
+<th align="left">Field</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Step 1: Choose your date range.</strong></td>
+<td align="left">Date range</td>
+<td align="left"><code>1990-01-01</code>–<code>2015-12-31</code></td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Step 2: Apply your company codes.</strong></td>
+<td align="left">Select an option for entering company codes</td>
+<td align="left">Upload a <code>cusip-list.txt</code> file that results from running <code>03-export-cusips.R</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Conditional Statements (Optional)</td>
+<td align="left">None (leave fields empty)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Step 2: Query Variables.</strong></td>
+<td align="left">Select</td>
+<td align="left">All</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Step 3: Select query output.</strong></td>
+<td align="left">Output Format</td>
+<td align="left"><code>comma-delimited text (*.csv)</code></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">Compression Type</td>
+<td align="left"><code>gzip (*.gz)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Date Format</td>
+<td align="left"><code>YYMMDDs10. (e.g. 1984/07/25)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The output is saved into <code>~/data/</code> directory under the name <code>wrds-crsp-stocks-19900101-20151231.csv.gz</code>.</p>
+</div>
+<div id="data-request-summary-13" class="section level4">
+<h4>Data request summary</h4>
+<p>Data request summary:</p>
+<table style="width:39%;">
+<colgroup>
+<col width="19%"></col>
+<col width="19%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Data Request ID</td>
+<td align="left">c15756b0ac0282d7</td>
+</tr>
+<tr class="even">
+<td align="left">Libraries/Data Sets</td>
+<td align="left">crspa/dsf /</td>
+</tr>
+<tr class="odd">
+<td align="left">Frequency/Date Range</td>
+<td align="left">day / 01Jan1990 - 31Dec2015</td>
+</tr>
+<tr class="even">
+<td align="left">Search Variable</td>
+<td align="left">CUSIP</td>
+</tr>
+<tr class="odd">
+<td align="left">Input Codes all item(s) 55555 item(s)</td>
+<td align="left"><code>31806710 -etc-</code></td>
+</tr>
+<tr class="even">
+<td align="left">Conditional Statements</td>
+<td align="left">n/a</td>
+</tr>
+<tr class="odd">
+<td align="left">Output format/Compression</td>
+<td align="left">csv / gz</td>
+</tr>
+<tr class="even">
+<td align="left">Variables Selected</td>
+<td align="left">CUSIP NCUSIP COMNAM TICKER PERMCO SHRCD SHRCLS ISSUNO EXCHCD HEXCD SICCD HSICCD HSICMG HSICIG NAMEENDT TSYMBOL NAICS PRIMEXCH TRDSTAT SECSTAT PRC VOL OPENPRC ASKHI BIDLO BID ASK NUMTRD RET RETX SHROUT SHRFLG</td>
+</tr>
+<tr class="odd">
+<td align="left">Extra Variables and Parameters Selected</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="mflinks" class="section level2">
+<h2>MFLINKS</h2>
+<p>We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method.</p>
+</div>
 <div id="variable-description" class="section level2">
 <h2>Variable description</h2>
 <div id="thomson-reuters-mutual-fund-holdings" class="section level3">
 <h3>Thomson Reuters Mutual Fund Holdings</h3>
-<p>Some of the information, including the relationship between four types can found <a href="./data-description/raw/tr-mfh/wrds-overview-of-thomson-reuters-mutual-fund-and-investment-company-data.pdf">here</a> and <a href="./data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf">here</a>.</p>
+<p>Some of the information, including the relationship between four types can found <a href="../data-description/raw/tr-mfh/wrds-overview-of-thomson-reuters-mutual-fund-and-investment-company-data.pdf">here</a> and <a href="../data-description/raw/tr-mfh/thomson-reuters-legacy-institutional-(13f)-holdings-data-feeds-specification.pdf">here</a>.</p>
 <div id="type-1-fund-characteristics-1" class="section level4">
 <h4>Type 1: fund characteristics</h4>
 <p>Thomson Reuters Mutual Fund Holdings - Type 1: Fund Characteristics</p>
@@ -1875,7 +1995,7 @@ blockquote {
 </div>
 <div id="crsp-mutual-fund-database-1" class="section level3">
 <h3>CRSP Mutual Fund Database</h3>
-<p>Some of the information, including the relationship between four types can found <a href="crsp-mfdb-guide.pdf">here</a>.</p>
+<p>Some of the information, including the relationship between four types can found <a href="../data-description/raw/crsp-mfdb/crsp-mfdb-guide.pdf">here</a>.</p>
 <div id="fund-summary-1" class="section level4">
 <h4>Fund summary</h4>
 <p>CRSP Mutual Funds - Summary</p>
@@ -2777,6 +2897,294 @@ blockquote {
 <tr class="even">
 <td align="left">zip</td>
 <td align="left">Management Company Zip Code</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="crsp-stock-data-1" class="section level3">
+<h3>CRSP Stock Data</h3>
+<div id="type-4-change-in-holdings-2" class="section level4">
+<h4>Type 4: change in holdings</h4>
+<p>Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Library:</td>
+<td align="left">crspa</td>
+</tr>
+<tr class="even">
+<td align="left">File:</td>
+<td align="left">dsf</td>
+</tr>
+<tr class="odd">
+<td align="left">Data Range:</td>
+<td align="left">12/31/1925 - 12/31/2015</td>
+</tr>
+<tr class="even">
+<td align="left">Last Updated On:</td>
+<td align="left">02/02/2016</td>
+</tr>
+<tr class="odd">
+<td align="left">Update Schedule:</td>
+<td align="left">Annually</td>
+</tr>
+</tbody>
+</table>
+<p>Variable Reference</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Variable Name</th>
+<th align="left">Variable Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">accomp</td>
+<td align="left">Acquiring PERMCO</td>
+</tr>
+<tr class="even">
+<td align="left">acperm</td>
+<td align="left">Acquiring PERMNO</td>
+</tr>
+<tr class="odd">
+<td align="left">ask</td>
+<td align="left">Closing Ask</td>
+</tr>
+<tr class="even">
+<td align="left">askhi</td>
+<td align="left">Ask or High</td>
+</tr>
+<tr class="odd">
+<td align="left">bid</td>
+<td align="left">Closing Bid</td>
+</tr>
+<tr class="even">
+<td align="left">bidlo</td>
+<td align="left">Bid or Low</td>
+</tr>
+<tr class="odd">
+<td align="left">cfacpr</td>
+<td align="left">Cumulative Factor to Adjust Price</td>
+</tr>
+<tr class="even">
+<td align="left">cfacshr</td>
+<td align="left">Cumulative Factor to Adjust Shares</td>
+</tr>
+<tr class="odd">
+<td align="left">comnam</td>
+<td align="left">Company Name</td>
+</tr>
+<tr class="even">
+<td align="left">cusip</td>
+<td align="left">Cusip</td>
+</tr>
+<tr class="odd">
+<td align="left">dclrdt</td>
+<td align="left">Declaration Date</td>
+</tr>
+<tr class="even">
+<td align="left">distcd</td>
+<td align="left">Distribution Code</td>
+</tr>
+<tr class="odd">
+<td align="left">divamt</td>
+<td align="left">Dividend Cash Amount</td>
+</tr>
+<tr class="even">
+<td align="left">dlamt</td>
+<td align="left">Amount After Delisting</td>
+</tr>
+<tr class="odd">
+<td align="left">dlpdt</td>
+<td align="left">Date of Delisting Payment</td>
+</tr>
+<tr class="even">
+<td align="left">dlprc</td>
+<td align="left">Delisting Price</td>
+</tr>
+<tr class="odd">
+<td align="left">dlret</td>
+<td align="left">Delisting Return</td>
+</tr>
+<tr class="even">
+<td align="left">dlretx</td>
+<td align="left">Delisting Return without Dividends</td>
+</tr>
+<tr class="odd">
+<td align="left">dlstcd</td>
+<td align="left">Delisting Code</td>
+</tr>
+<tr class="even">
+<td align="left">ewretd</td>
+<td align="left">Equal-Weighted Return (includes distributions)</td>
+</tr>
+<tr class="odd">
+<td align="left">ewretx</td>
+<td align="left">Equal-Weighted Return (excluding dividends)</td>
+</tr>
+<tr class="even">
+<td align="left">exchcd</td>
+<td align="left">Exchange Code</td>
+</tr>
+<tr class="odd">
+<td align="left">facpr</td>
+<td align="left">Factor to Adjust Price</td>
+</tr>
+<tr class="even">
+<td align="left">facshr</td>
+<td align="left">Factor to Adjust Shares</td>
+</tr>
+<tr class="odd">
+<td align="left">hexcd</td>
+<td align="left">Header Exchange Code</td>
+</tr>
+<tr class="even">
+<td align="left">hsiccd</td>
+<td align="left">Header SIC Code</td>
+</tr>
+<tr class="odd">
+<td align="left">hsicig</td>
+<td align="left">Header SIC Industry Group</td>
+</tr>
+<tr class="even">
+<td align="left">hsicmg</td>
+<td align="left">Header SIC Major Group</td>
+</tr>
+<tr class="odd">
+<td align="left">issuno</td>
+<td align="left">Nasdaq Issue Number</td>
+</tr>
+<tr class="even">
+<td align="left">mmcnt</td>
+<td align="left">Market Maker Count</td>
+</tr>
+<tr class="odd">
+<td align="left">naics</td>
+<td align="left">North American Industry Class System</td>
+</tr>
+<tr class="even">
+<td align="left">nameendt</td>
+<td align="left">Names Ending Date</td>
+</tr>
+<tr class="odd">
+<td align="left">ncusip</td>
+<td align="left">Ncusip</td>
+</tr>
+<tr class="even">
+<td align="left">nextdt</td>
+<td align="left">Date of Next Available Information</td>
+</tr>
+<tr class="odd">
+<td align="left">nmsind</td>
+<td align="left">National Market Indicator</td>
+</tr>
+<tr class="even">
+<td align="left">nsdinx</td>
+<td align="left">NASD Index</td>
+</tr>
+<tr class="odd">
+<td align="left">numtrd</td>
+<td align="left">Number of Trades</td>
+</tr>
+<tr class="even">
+<td align="left">nwperm</td>
+<td align="left">New CRSP Permno</td>
+</tr>
+<tr class="odd">
+<td align="left">openprc</td>
+<td align="left">Open Price</td>
+</tr>
+<tr class="even">
+<td align="left">paydt</td>
+<td align="left">Payment Date</td>
+</tr>
+<tr class="odd">
+<td align="left">permc</td>
+<td align="left">CRSP Permanent Company Number</td>
+</tr>
+<tr class="even">
+<td align="left">prc</td>
+<td align="left">Price</td>
+</tr>
+<tr class="odd">
+<td align="left">primexch</td>
+<td align="left">Primary Exchange</td>
+</tr>
+<tr class="even">
+<td align="left">rcrddt</td>
+<td align="left">Record Date</td>
+</tr>
+<tr class="odd">
+<td align="left">ret</td>
+<td align="left">Holding Period Return</td>
+</tr>
+<tr class="even">
+<td align="left">retx</td>
+<td align="left">Return without Dividends</td>
+</tr>
+<tr class="odd">
+<td align="left">secstat</td>
+<td align="left">Security Status</td>
+</tr>
+<tr class="even">
+<td align="left">shrcd</td>
+<td align="left">Share Code</td>
+</tr>
+<tr class="odd">
+<td align="left">shrcls</td>
+<td align="left">Share Class</td>
+</tr>
+<tr class="even">
+<td align="left">shrflg</td>
+<td align="left">Share Flag</td>
+</tr>
+<tr class="odd">
+<td align="left">shrout</td>
+<td align="left">Number of Shares Outstanding</td>
+</tr>
+<tr class="even">
+<td align="left">siccd</td>
+<td align="left">SIC Code</td>
+</tr>
+<tr class="odd">
+<td align="left">sprtrn</td>
+<td align="left">Return on S&amp;P Composite Index</td>
+</tr>
+<tr class="even">
+<td align="left">ticker</td>
+<td align="left">Ticker</td>
+</tr>
+<tr class="odd">
+<td align="left">trdstat</td>
+<td align="left">Trading Status</td>
+</tr>
+<tr class="even">
+<td align="left">trtscd</td>
+<td align="left">Traits Code</td>
+</tr>
+<tr class="odd">
+<td align="left">tsymbol</td>
+<td align="left">Trading Symbol</td>
+</tr>
+<tr class="even">
+<td align="left">vol</td>
+<td align="left">Share Volume</td>
+</tr>
+<tr class="odd">
+<td align="left">vwretd</td>
+<td align="left">Value-Weighted Return (includes distributions)</td>
+</tr>
+<tr class="even">
+<td align="left">vwretx</td>
+<td align="left">Value-Weighted Return (excluding dividends)</td>
 </tr>
 </tbody>
 </table>

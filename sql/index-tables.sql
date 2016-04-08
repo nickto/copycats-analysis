@@ -57,3 +57,7 @@ CREATE INDEX ON mflinks.link2(crsp_fundno);
 CREATE INDEX ON mflinks.link2(wfcin);
 CREATE INDEX ON mflinks.link2(ncusip);
 CREATE INDEX ON mflinks.link2(cusip8);
+
+-- Create Stocks indeces
+CREATE INDEX ON stocks.daily(date);
+CREATE INDEX ON stocks.daily(cusip);

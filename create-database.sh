@@ -1,15 +1,7 @@
 #!/bin/bash
 
-# TODO
-# experiment with psql variable name so that it points directly to psql.exe
-# create a table
-
 # This shell script creates a database and sets it up for further convenient
 # analysis in R.
-
-# It accepts the following arguments
-# placeholder for arguments
-
 
 # Set up directories and variable values
 # Set up directory locations
@@ -487,7 +479,7 @@ else
 
     echo Remove temporary files
     rm ./data/clean/*
-    if [ $? -ne 0] ; then
+    if [ $? -ne 0 ] ; then
 	echo Removing temporary files exitted with errors.
 	exit 2;    
     fi
@@ -542,7 +534,7 @@ echo ---------------------------------------------------------------------------
 # Create table indeces
 echo Create indeces
 
-"$psql" -U $username -d $database -f './sql/index-tables.sql'
+# "$psql" -U $username -d $database -f './sql/index-tables.sql'
 
 
 
