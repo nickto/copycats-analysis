@@ -11,9 +11,13 @@ pw <- {
 
 # connect to Postgre
 drv <- dbDriver("PostgreSQL")
-con <- dbConnect(drv, dbname = "copycats",
-                 host = "localhost", port = 5432,
-                 user = "copycat", password = pw)
+if (!exists("con")) {
+    con <- dbConnect(drv, dbname = "copycats",
+                     host = "localhost", port = 5432,
+                     user = "copycat", password = pw)
+} else {
+    warning("Connection with this name exists, did not create a new one.")
+}
 
 # # template
 # sql_command <- "

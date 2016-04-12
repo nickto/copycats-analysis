@@ -169,6 +169,8 @@ ON
 
 -- Select only the funds that are domestic equity only, non-index, using the 
 -- methodology approach Wang and Verbeek (2009). 
+--
+-- The name prefix stands for "Domestic equity-only"
 CREATE TABle if not exists clean.deo_wfcin as (
   -- TR funds that fit into required category by IOC
   with tr_deo as (
@@ -258,6 +260,8 @@ ON
 -- Select non-index funds as suggested by Wang and Verbeek (2009): partially 
 -- matching string that contain word "index" in some form. But additionaly
 -- exlcude the ones that have index fund flag
+-- 
+-- The name prefix stands for "Domestic equity-only non-index"
 create table if not exists clean.deoni_wfcin as (
   select 
     *
