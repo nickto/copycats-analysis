@@ -1,75 +1,130 @@
 source("./r/02-connect-to-db.R")
 source("./r/functions.R")
 
+# Date at which to start the analysis (if you change it to earlier, it won't
+# work anyway, because there is not data downloaded for earlier points in time)
+analysisStartDate <- as.Date('1990-01-01')
+
 
 # get list of of unique fund identifiers
-sql_command <- "
-SELECT DISTINCT
-    wfcin
-FROM
-    clean.deoni_wfcin
-"
-wfcinList <- dbGetQuery(con, sql_command)
+wfcinList <- getWfcinList()
 
 
-# Count fund numbrs do disaply progress
-nWfcin <- dim(wfcinList)[1]
+# Count fund numbrs do display progress
+nWfcin <- length(wfcinList)
 iWfcin <- 1
 
 # Loop through all funds
-for (wfcin in wfcinList[3598,1]) {
-    # Select all daily returns for the current funds
-    fundReturns <- getFundReturns(wfcin, frequency = "daily")
+#for (wfcin in wfcinList[3598]) {
+for (wfcin in (sample_n(as.data.frame(wfcinList), 10))[,1]) {
+    #wfcin <- 102441 # problematic
+    #wfcin <- 107167 # working
+    #wfcin <- 106730 # long
+    # wfcin <- 410706 # another problematic fund (straight line)
 
-    # replicate performance
-    # Create a data frame with cusips that the funds ever had and store there
-    # current share number. Update share numbers whenever there is a change in
-    # portfolio holdings.
-    # For every date, find TNA of portfolio. Calculate return for that date.
-    # Add this return to grossReturnsDf
+    # Process outline:
+    # 1. select monthtly fund returns
+    # 2. select all information about fund holdings
+    # 3. work with daily copycat returns on the following timeline:
+    #   all dates from stock return data base that are between the first
+    #   holding disclosure date and the last fund return date
 
-    # TODO:
-    # - tradings costs
-    # - amount of cash (not forgetting that it also bears some interest)
-    # - fix the NAs problem in returns
-
-
+    # Select all monthly returns for the current funds
+    fundReturns <- getFundReturns(wfcin, frequency = "monthly")
+    if(isEmptyDataFrame(fundReturns)) {next()}
+    # Select fund holdings information
     holdings <- getFundHoldings(wfcin)
-    holdingsChange <- getFundHoldingsChange(wfcin)
-
-
-    startDate <- min(holdings$fdate)
+    if(isEmptyDataFrame(holdings)) {next()}
+    holdingsDates <- getHoldingsDates(holdings)
+    holdingsDates <- holdingsDates[holdingsDates >= analysisStartDate]
+    # Obtain start and end date of our analysis
+    startDate <- min(holdingsDates)
     endDate <- max(fundReturns$caldt)
-    dateList <- fundReturns$caldt[fundReturns$caldt >= startDate &
-                                     fundReturns$caldt <= endDate]
+
+    # Check if the fund has some info in the analysis period
+    if(startDate >= endDate) {next()}
+
+    # Select all information about holdings that we will need later
+    stockData <- getStockData(wfcin, startDate, endDate)
+    if(isEmptyDataFrame(stockData)) {next()}
+    # Select dates on which holdings have changed
+    stockDataDates <- getStockDataDates(stockData)
 
 
+    # List of dates to work with
+    dateList <- sort(stockDataDates[stockDataDates >= startDate &&
+                                   stockDataDates <= endDate])
 
-    oldPortfolio <-portfolioTemplate(wfcin)
-    # For every day that returns are available for
-    for (date in dateList) {
-        portfolio <- getPortfolio(wfcin, date)
-        if(date == startDate) {
-            next()
+    # This data frame stores returns
+    copycatReturns <- data.frame(date = dateList) %>%
+        mutate(stockR = NA,    # domestic equity return
+               stockW = NA,    # domestic equity weight
+               stockTc = NA,   # trading costs expressed as negative returns
+               cashR = NA,     # cash return
+               cashW = NA,     # cash weight
+               bondR = NA,     # bond returns
+               bondW = NA,     # bond weight
+               fStockR = NA,   # foreign stock return
+               fStockW = NA)   # foreign stock weight
+
+    portfolio <- data.frame()
+    for (today in dateList) {
+        # today <- dateList[2]
+        # Calculate returns (this is done always, unless this is the first day,
+        # in which case portfolio variable is an empty data frame)
+        if(!isEmptyDataFrame(portfolio)) {
+            # Domestic equity
+            # there is a portfolio on which to calculate today's returns
+
+            portfolioData <- getPortfolioData(portfolio,
+                                              stockData,
+                                              dateList,
+                                              today)
+            portfolioReturn <- getPortfolioReturn(portfolioData)
+            with(portfolioData, sum(weight * ret, na.rm = TRUE))
+            # store domestic equity return
+            copycatReturns$stockR[copycatReturns$date == today] <-
+                portfolioReturn
         }
-        #print(portfolio[1,])
 
-        portfolio <- fillPortfolioData(portfolio)
-        stockReturn <- sum(portfolio$weight * portfolio$return, na.rm = TRUE)
-        print(stockReturn)
+        # Check if we need to update our portfolio
+        # Appropriate holdings date. NULL if there is no need to update holdings
+        hDate <- updateHoldingsDate(today, holdingsDates, dateList)
+
+        if (!is.null(hDate) && hDate != -Inf) {
+            portfolio <- getPortfolio(holdings, today)
+        }
+
+
+        getPortfolio(holdings, as.Date("2011-09-30"))
 
     }
-    print(portfolio)
-
-    source("./r/functions.R")
-    portfolio <- getPortfolio(wfcin, '1998-10-30')
-    fillPortfolioData(portfolio)
 
 
+    cR <- select(copycatReturns, date, stockR) %>%
+        mutate(year = year(date), month = month(date)) %>%
+        mutate(ym = paste(year, month, sep = "-")) %>%
+        select(ym, stockR)
+    cR <- summarize(group_by(cR, ym),
+                    ret = exp(sum(log(stockR + 1), na.rm = TRUE)) - 1)
 
-    # pritn p
-    # print(paste0(iWfcin,"/",nWfcin))
-    # iWfcin = iWfcin + 1
+    fR <- select(fundReturns, caldt, mret) %>%
+        mutate(year = year(caldt), month = month(caldt)) %>%
+        mutate(ym = paste(year, month, sep = "-")) %>%
+        select(caldt, ym, mret)
 
+    tmp <- full_join(cR, fR, by = 'ym') %>%
+        rename(date = caldt, copied = ret, actual = mret) %>%
+        select(date, actual, copied)
+
+    tmp <- xts(select(tmp, actual, copied), order.by = tmp$date)
+    png(paste0('./export/images/', wfcin, ".png"))
+    print(autoplot(tmp))
+    dev.off()
+
+    print(paste0(iWfcin,"/",nWfcin))
+    iWfcin = iWfcin + 1
+    gc()
 }
+
 

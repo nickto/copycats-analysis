@@ -295,3 +295,79 @@ ON
 
 
 
+-------------------------------------------------------------------------------
+-- Create tr.holdings table with wfcin indeces
+CREATE TABLE IF NOT EXISTS clean.holdings_wfcin as (
+  SELECT 
+    h.*,
+    w.wfcin
+  FROM
+    tr.holdings as h
+  LEFT JOIN 
+    clean.tr_wfcin as w ON
+    w.fundno = h.fundno AND
+    w.fdate = h.fdate
+);
+
+CREATE INDEX IF NOT EXISTS
+  holdings_wfcin_wfcin_idx
+ON
+  clean.holdings_wfcin(wfcin);
+CREATE INDEX IF NOT EXISTS
+  holdings_wfcin_fdate_idx
+ON
+  clean.holdings_wfcin(fdate);
+CREATE INDEX IF NOT EXISTS
+  holdings_wfcin_fundno_idx
+ON
+  clean.holdings_wfcin(fundno);
+
+--------------------------------------------------------------------------------
+-- Crate crsp.monthly_returns table with wfcin indeces
+CREATE TABLE IF NOT EXISTS clean.mret_wfcin as (
+  SELECT 
+    r.*,
+    w.wfcin
+  FROM
+    crsp.monthly_returns as r
+  LEFT JOIN 
+    clean.crsp_wfcin as w ON
+    w.crsp_fundno = r.crsp_fundno    
+);
+CREATE INDEX IF NOT EXISTS
+  mret_wfcin_wfcin_idx
+ON
+  clean.mret_wfcin(wfcin);
+CREATE INDEX IF NOT EXISTS
+  mret_wfcin_caldt_idx
+ON
+  clean.mret_wfcin(caldt);
+CREATE INDEX IF NOT EXISTS
+  mret_wfcin_crsp_fundno_idx
+ON
+  clean.mret_wfcin(crsp_fundno);
+
+--------------------------------------------------------------------------------
+-- Crate crsp.monthly_returns table with wfcin indeces
+CREATE TABLE IF NOT EXISTS clean.dret_wfcin as (
+  SELECT 
+    r.*,
+    w.wfcin
+  FROM
+    crsp.daily_returns as r
+  LEFT JOIN 
+    clean.crsp_wfcin as w ON
+    w.crsp_fundno = r.crsp_fundno    
+);
+CREATE INDEX IF NOT EXISTS
+  dret_wfcin_wfcin_idx
+ON
+  clean.dret_wfcin(wfcin);
+CREATE INDEX IF NOT EXISTS
+  dret_wfcin_caldt_idx
+ON
+  clean.dret_wfcin(caldt);
+CREATE INDEX IF NOT EXISTS
+  dret_wfcin_crsp_fundno_idx
+ON
+  clean.dret_wfcin(crsp_fundno);
