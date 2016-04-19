@@ -371,3 +371,28 @@ CREATE INDEX IF NOT EXISTS
   dret_wfcin_crsp_fundno_idx
 ON
   clean.dret_wfcin(crsp_fundno);
+
+--------------------------------------------------------------------------------
+-- Crate crsp.monthly_returns table with wfcin indeces
+CREATE TABLE IF NOT EXISTS clean.crsp_fs_wfcin as (
+  SELECT 
+    s.*,
+    w.wfcin
+  FROM
+    crsp.fund_summary as s
+  LEFT JOIN 
+    clean.crsp_wfcin as w ON
+    w.crsp_fundno = s.crsp_fundno    
+);
+CREATE INDEX IF NOT EXISTS
+  crsp_fs_wfcin_wfcin_idx
+ON
+  clean.crsp_fs_wfcin(wfcin);
+CREATE INDEX IF NOT EXISTS
+  crsp_fs_wfcin_caldt_idx
+ON
+  clean.crsp_fs_wfcin(caldt);
+CREATE INDEX IF NOT EXISTS
+  crsp_fs_wfcin_asset_dt_idx
+ON
+  clean.crsp_fs_wfcin(asset_dt);

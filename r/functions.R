@@ -1,7 +1,6 @@
 # This file contains functions.
-
-
 source("./r/02-connect-to-db.R")
+
 
 isEmptyDataFrame <- function(df) {
     if (dim(df)[1] == 0 && dim(df)[2] == 0) {
@@ -42,14 +41,15 @@ getStockData <- function(wfcin, startDate, endDate) {
         select
           c.cusip,
           s.date,
-          s.openprc,
+          --s.openprc,
           s.prc,
-          s.bid,
-          s.ask,
+          --s.bid,
+          --s.ask,
           s.ret,
           s.dlret,
           s.shrout,
-          s.exchcd
+          s.exchcd,
+          s.cfacshr
         from cusips as c
         left join stocks.daily as s on
           c.cusip = s.ncusip
@@ -60,53 +60,34 @@ getStockData <- function(wfcin, startDate, endDate) {
           date,
           cusip
     ")
-    stockData <- dbGetQuery(con, sql_command)
+    stockData <- as.data.table(dbGetQuery(con, sql_command))
 
     # repalce missing values indicated by -66, -77, -88, -99 with proper NA
-    stockData$ret[stockData$ret %in% c(-66,-77,-88,-99)] <- NA
-    stockData$dlret[is.na(stockData$dlret)] <- 0
+    stockData[ret %in% c(-66,-77,-88,-99), ret := NA]
+
+    # replace dlret with zeroes
+    stockData[is.na(dlret), dlret := 0]
+
+    # remove duplicates, which for some reason is present
+    stockData <- unique(stockData, by = c("cusip", "date"))
 
     return(stockData)
 }
 
 getHoldingsDates <- function(holdings) {
 # This function returns a vector of dates on which holdings have changed
-    dates <- select(holdings, fdate) %>% distinct()
-    return(dates[,1])
+    dateKey <- setkey(holdings, fdate)
+    dates <- unique(holdings, by = key(dateKey))[,fdate]
+
+    return(dates)
 }
 
 getStockDataDates <- function (stockData) {
-    dates <- select(stockData, date) %>% distinct()
-    return(dates[,1])
+    dateKey <- setkey(stockData, date)
+    dates <- unique(stockData, by = key(dateKey))[,date]
+
+    return(dates)
 }
-
-
-
-getPortfolioChanges <- function(oldPortfolio, newPortfolio) {
-# This function returns differences between two portfolios.
-
-    # Check if old portfolio is empty and then basically return the new
-    # portfolio
-    if (dim(oldPortfolio)[1] == 0 && dim(oldPortfolio)[2] == 0) {
-        both <- mutate(newPortfolio, sharesOld = 0,
-                       sharesNew = shares,
-                       change = shares) %>%
-                    select(cusip, sharesOld, sharesNew, change)
-        return(both)
-    }
-
-    # Both portfolios contain somethind, therefore actually calculate the
-    # difference
-    both <- full_join(oldPortfolio, newPortfolio, by = 'cusip') %>%
-        rename(sharesOld = shares.x, sharesNew = shares.y) %>%
-        select(cusip, sharesOld, sharesNew) %>%
-        mutate(sharesOld = replace(sharesOld, is.na(sharesOld), 0),
-               sharesNew = replace(sharesNew, is.na(sharesNew), 0)) %>%
-        mutate(change = sharesNew - sharesOld)
-
-    return(both)
-}
-
 
 getFundReturns <- function(wfcin, frequency = "daily") {
 # This function extracts all available returns at a specified frequency (daily/
@@ -144,7 +125,7 @@ getFundReturns <- function(wfcin, frequency = "daily") {
         stop("Wrong argument value.")
     }
 
-    return(fundReturns)
+    return(as.data.table(fundReturns))
 }
 
 getFundHoldings <- function(wfcin) {
@@ -158,10 +139,10 @@ getFundHoldings <- function(wfcin) {
 
     sql_command <- paste0("
         select
+            wfcin,
             fdate,
             cusip,
-            shares,
-            wfcin
+            shares
         from
           clean.holdings_wfcin
         where
@@ -169,7 +150,14 @@ getFundHoldings <- function(wfcin) {
     ")
     holdings <- dbGetQuery(con, sql_command)
 
-    return(holdings)
+    return(as.data.table(holdings))
+}
+
+getPortfolio <- function(holdings, hDate) {
+# This function returns portfolio at a specified date. (It finds the most
+# recent information in holdings)
+    newHoldings <- holdings[fdate == hDate, .(fdate, cusip, shares)]
+    return(newHoldings)
 }
 
 getPortfolioData <- function(portfolio, stockData, dateList, today) {
@@ -177,36 +165,42 @@ getPortfolioData <- function(portfolio, stockData, dateList, today) {
 # to calculate return
     prevDay <- max(dateList[dateList < today])
 
-    currStockData <- filter(stockData, date == today)
-    prevStockData <- filter(stockData, date == prevDay)
+    currStockData <- stockData[date == today]
+    prevStockData <- stockData[date == prevDay, .(cusip, prc, cfacshr)]
 
-    portfolioData <-
-    left_join(portfolio, currStockData, by = 'cusip') %>%
-        left_join(select(prevStockData, cusip, prc), by = 'cusip') %>%
-        rename(prc = prc.x, prcPrev = prc.y) %>%
-        mutate(weight = prcPrev * shares /
-                   sum (prcPrev * shares, na.rm = TRUE))
+    setkey(currStockData, cusip)
+    setkey(prevStockData, cusip)
+
+    portfolioData <- merge(portfolio, currStockData, by = 'cusip',
+                           all.x = TRUE, all.y = FALSE)
+
+    portfolioData <- merge(portfolioData,
+                           prevStockData,
+                           by = 'cusip', all.x = TRUE, all.y = FALSE)
+    setnames(portfolioData,
+             c("prc.x", "prc.y"),
+             c("prc", "prcPrev"))
+    portfolioData[, split := cfacshr.y / cfacshr.x]
+    portfolioData[, cfacshr.y := NULL]
+    portfolioData[, cfacshr.x := NULL]
+    portfolioData[, weight := prcPrev * shares /
+                      sum (prcPrev * shares, na.rm = TRUE)]
+
     return(portfolioData)
-}
-
-getPortfolio <- function(holdings, date) {
-# This function returns portfolio at a specified date. (It finds the most
-# recent information in holdings)
-
-    # date from which to get holdings. It can be different from supplied date
-    hDate <- max(distinct(filter(select(holdings, fdate), fdate <= today))[,1])
-
-    newHoldings <- select(holdings, fdate, cusip, shares) %>%
-        filter(fdate == hDate )
-
-    return(newHoldings)
 }
 
 getPortfolioReturn <- function(portfolioData) {
     return(with(portfolioData, sum(weight * ret, na.rm = TRUE)))
 }
 
+splitAdjust <- function(portfolioData) {
+    portfolioData[!is.na(split) & split != 1, shares := shares * split]
+    return(portfolioData[, .(fdate, cusip, shares)])
+}
+
 updateHoldingsDate <- function(today, holdingsDates, dateList) {
+# Returns the date at which to look for holding information. If there is no new
+# holding information, returns NULL
     if (today %in% holdingsDates) {
         return(today)
     } else {
@@ -218,8 +212,8 @@ updateHoldingsDate <- function(today, holdingsDates, dateList) {
             return(NULL)
         }
     }
-}
 
+}
 
 createIndeces <- function(returns) {
     indeces <- data.frame()

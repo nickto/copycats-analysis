@@ -7,6 +7,7 @@ if (!require("ggplot2")) install.packages("ggplot2")
 if (!require("xts")) install.packages("xts")
 if (!require("ggfortify")) install.packages("ggfortify")
 if (!require("lubridate")) install.packages("lubridate")
+if (!require("data.table")) install.packages("data.table")
 
 # If the above command does not work, then install from another repo:
 # install.packages('ff', repo='http://nbcgib.uesc.br/mirrors/cran/')
@@ -19,5 +20,6 @@ library(ggplot2)
 library(xts)
 library(ggfortify)
 library(lubridate)
+library(data.table)
 
 
