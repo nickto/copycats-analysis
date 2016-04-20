@@ -11,6 +11,7 @@ analysisStartDate <- as.Date('1990-01-01')
 
 # get list of of unique fund identifiers
 wfcinList <- getWfcinList()
+averageCash <- getAverageCash()
 
 
 # Count fund numbrs do display progress
@@ -21,7 +22,7 @@ iWfcin <- 1
 set.seed(182)
 for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
     #wfcin <- 102441 # problematic
-    # wfcin <- 107167 # working
+    #wfcin <- 107167 # working
     #wfcin <- 106730 # long
     #wfcin <- 410706 # another problematic fund (straight line)
 
@@ -50,7 +51,7 @@ for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
 
 
     # Check if the fund has some info in the analysis period
-    if(startDate >= endDate) {next()}
+    if(startDate >= endDate || is.na(endDate)) {next()}
 
     # Select all information about holdings that we will need later
     stockData <- getStockData(wfcin, startDate, endDate)
@@ -58,10 +59,12 @@ for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
     # Select dates on which holdings have changed
     stockDataDates <- getStockDataDates(stockData)
 
-
     # List of dates to work with
     dateList <- sort(stockDataDates[stockDataDates >= startDate &&
                                    stockDataDates <= endDate])
+
+    # Select information about portfolio composition (equity, cash etc)
+    categoryData <- getCategoryData(holdingsDates, wfcin)
 
     # This data frame stores returns
     copycatReturns <- data.table(
@@ -71,40 +74,60 @@ for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
         stockTc = as.numeric(NA),   # trading costs expressed as negative returns
         cashR = as.numeric(NA),     # cash return
         cashW = as.numeric(NA),     # cash weight
-        bondR = as.numeric(NA),     # bond returns
-        bondW = as.numeric(NA),     # bond weight
-        fStockR = as.numeric(NA),   # foreign stock return
-        fStockW = as.numeric(NA))   # foreign stock weight
+        otherR = as.numeric(NA),     # other returns
+        otherW = as.numeric(NA))     # other weight
+
 
     portfolio <- data.table()
     for (today in dateList) {
+        #today <- dateList[2]
         # Calculate returns (this is done always, unless this is the first day,
         # in which case portfolio variable is an empty data frame)
         if(!isEmptyDataFrame(portfolio)) {
+            # Returns
             # Domestic equity
             portfolioData <- getPortfolioData(portfolio,
                                               stockData,
                                               dateList,
                                               today)
-
             portfolioReturn <- getPortfolioReturn(portfolioData)
-
             # store domestic equity return
             copycatReturns[date == today, stockR := portfolioReturn]
-            # adjust for splots
+            # adjust for splits
             portfolio <- splitAdjust(portfolioData)
+
+            # Cash
+
+            # Other
+
+
+            # Weights
+            # Currently just drag the previous value. Later should also adjust
+            # for differences in returns
+            getNewWeights(copycatReturns, today, yesterday)
+
         }
 
         # Check if we need to update our portfolio
         # Appropriate holdings date. NULL if there is no need to update holdings
+        # (checks if there is new information about holdings since previous day)
         hDate <- updateHoldingsDate(today, holdingsDates, dateList)
 
         if (!is.null(hDate) && hDate != -Inf) {
+            # print progress
             print(paste(as.Date(hDate), as.Date(dateList[length(dateList)])))
+            # update equity portfolio holdings
             portfolio <- getPortfolio(holdings, hDate)
+
+            # Update category weights
+            copycatReturns[date == today, stockW := categoryData[fdate == hDate, stockW]]
+            copycatReturns[date == today, cashW :=  categoryData[fdate == hDate, cashW]]
+            copycatReturns[date == today, otherW := categoryData[fdate == hDate, otherW]]
+
+            # calculate trade costs
         }
 
-
+        yesterday <- today
     }
 
 
@@ -128,6 +151,9 @@ for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
     # png(paste0('./export/images/', wfcin, ".png"))
     # print(autoplot(tmp))
     # dev.off()
+
+    print(copycatReturns)
+
 
     print(paste0(iWfcin,"/",nWfcin))
     iWfcin = iWfcin + 1

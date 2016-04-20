@@ -24,6 +24,27 @@ getWfcinList <- function() {
     return(as.vector(wfcinList[,1]))
 }
 
+getAverageCash <- function(){
+    sql_command <- "
+    with avg_by_year as (
+      select
+        date_part('year', asset_dt),
+        avg(per_cash)
+      from clean.crsp_fs_wfcin
+      group by
+        date_part('year', asset_dt)
+      order by
+        date_part('year', asset_dt)
+    )
+    select
+      avg(avg)
+    from avg_by_year
+    "
+    avg <- dbGetQuery(con, sql_command)
+
+    return(avg[1,1]/100)
+}
+
 getStockData <- function(wfcin, startDate, endDate) {
 # This function return data frame with information about all stocks (that are
 # present in the database) that have ever been in funds holdings. This includes
@@ -72,6 +93,55 @@ getStockData <- function(wfcin, startDate, endDate) {
     stockData <- unique(stockData, by = c("cusip", "date"))
 
     return(stockData)
+}
+
+getCategoryData <- function(holdingsDates, wfcin) {
+    sql_command <- paste0("
+        select distinct
+          wfcin,
+          caldt,
+          asset_dt,
+          tna_latest * 1000000 as tna_latest,
+          per_com / 100 as per_com,
+          per_cash / 100 as per_cash,
+          per_bond / 100 as per_bond
+        from
+          clean.crsp_fs_wfcin
+        where wfcin = ", wfcin,"
+    ")
+    cDataQuery <- as.data.table(dbGetQuery(con, sql_command))
+    cDataQuery[, stockW := per_com]
+    cDataQuery[, cashW := per_cash]
+
+    # now combine it with holdings
+    if(!isEmptyDataFrame(cDataQuery)) {
+        # there is at least some information about categories
+        cData <- data.table(
+            fdate = as.Date(holdingsDates),
+            caldt = as.Date(NA))
+
+        for(i in 1:nrow(cData)) {
+            curFdate <- cData[i, fdate]
+            curCaldt <- max(cDataQuery[caldt <= curFdate, caldt])
+            cData[i, caldt := curCaldt]
+        }
+
+        cData <- merge(cData,
+                       cDataQuery[,c("caldt","asset_dt","tna_latest","stockW","cashW"),with=FALSE],
+                       by = 'caldt')
+        cData[,otherW := as.numeric(NA)]
+    } else {
+        # there is no information
+        cData <- data.table(
+            fdate = as.Date(holdingsDates),
+            caldt = as.Date(NA),
+            asset_dt = as.Date(NA),
+            tna_latest = as.numeric(NA),
+            stockW = as.numeric(NA),
+            cashW = as.numeric(NA),
+            otherW = as.numeric(NA))
+    }
+    return(cData)
 }
 
 getHoldingsDates <- function(holdings) {
@@ -215,6 +285,51 @@ updateHoldingsDate <- function(today, holdingsDates, dateList) {
 
 }
 
+getNewWeights <- function(copycatReturns, today, yesterday) {
+    # Stocks
+    wS <- copycatReturns[date == yesterday, stockW]
+
+    # Cash
+    wC <- copycatReturns[date == yesterday, cashW]
+
+    # Check if cash/stock data is missing
+    if(is.na(wS) && is.na(wC)) {
+        wC <- averageCash
+        wS <- 1 - averageCash
+    } else if (is.na(wS)) {
+        wC <- 1 - wS
+    } else if (is.na(wC)){
+        wS <- 1 - wC
+    }
+
+    # Other (bonds and foreign equity)
+    wO <- copycatReturns[date == yesterday, otherW]
+    # Check this type of data is also missing
+    if (is.na(wO)) {
+        wO <- 1 - wS - wC
+    }
+
+
+    # Returns
+    rS <- copycatReturns[date == today, stockR]
+    rS <- ifelse(is.na(rS), 0, rS)
+    rC <- copycatReturns[date == today, cashR]
+    rC <- ifelse(is.na(rC), 0, rC)
+    rO <- copycatReturns[date == today, otherR]
+    rO <- ifelse(is.na(rO), 0, rO)
+
+
+    # Total weight
+    wT <- wS * (1 + rS) + wC * (1 + rC) + wO * (1 + rO)
+
+    # Write data to copycatReturns
+    copycatReturns[date == today, stockW := (1 + rS) * wS / wT]
+    copycatReturns[date == today, cashW := (1 + rC) * wC / wT]
+    copycatReturns[date == today, otherW := (1 + rO) * wO / wT]
+
+    return(copycatReturns)
+}
+
 createIndeces <- function(returns) {
     indeces <- data.frame()
     indeces[1,"date"] <- returns[1,"date"]
@@ -241,6 +356,7 @@ createIndeces <- function(returns) {
     indeces$date <- as.Date(indeces$date)
     return(indeces)
 }
+
 
 
 
