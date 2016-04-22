@@ -499,7 +499,39 @@ Data request summary:
 We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method.
 
 
+## Cash return
+### CRSP TREASURIES - Issue Descriptions and Daily Time Series
+This data was extracted on 2016-04-20.
 
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your date range.** | Date range | `1990-01-01`--`2015-12-31` |
+| **Step 2: Bond Properties (Optional).** | Type of issue | Treasury Bill |
+|  | Conditional Statements (Optional) | None (leave fields empty) |
+| **Step 2: Query Variables.** | Select | Treasury CUSIP, Daily Unadjusted Return |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-crsp-t-bills-daily-19900101-20153112.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | b5c3acf2b7496952 |
+| Libraries/Data Sets | crspa/tfz_dly  /  |
+| Frequency/Date Range | / 01Jan1990 - 31Dec2015 |
+| Search Variable | caldt |
+| Input Codes all item(s) |  |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | TCUSIP TDRETNUA |
+| Extra Variables and Parameters Selected | 4 |
 
 
 
@@ -876,7 +908,7 @@ Variable Reference
 
 
 ### CRSP Stock Data
-#### Type 4: change in holdings
+#### Daily
 Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics
 
 | Key | Value |
@@ -952,7 +984,19 @@ Variable Reference
 | vwretd | Value-Weighted Return (includes distributions) |
 | vwretx | Value-Weighted Return (excluding dividends) |
 
+## Cash return
+### CRSP TREASURIES - Issue Descriptions and Daily Time Series
+| Key | Value |
+| --- | --- |
+| Library: | crspa |
+| File: | tfz_dly |
+| Data Range: | 06/14/1961 - 12/31/2015   |
+| Last Updated On: | 02/02/2016 |
+| Update Schedule: | Annually |
 
+Variable Reference
 
-
-    
+| Variable Name | Variable Description |
+| --- | --- |
+| TCUSIP | Treasury CUSIP |
+| TDRETNUA | Daily Unadjusted Return |

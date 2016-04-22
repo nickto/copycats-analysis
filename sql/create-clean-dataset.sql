@@ -396,3 +396,18 @@ CREATE INDEX IF NOT EXISTS
   crsp_fs_wfcin_asset_dt_idx
 ON
   clean.crsp_fs_wfcin(asset_dt);
+
+--------------------------------------------------------------------------------
+-- create daily t-bill returns
+CREATE TABLE IF NOT EXISTS clean.tbill_dret as (
+  select 
+    caldt,
+    avg(case tdretnua when -99 then NULL ELSE tdretnua END) as ret
+  from cash.daily
+  group by caldt
+  order by caldt
+);
+CREATE INDEX IF NOT EXISTS
+  tbill_dret_caldt_idx
+ON
+  clean.tbill_dret(caldt);

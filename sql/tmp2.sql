@@ -4,8 +4,7 @@
     h.wfcin,
     h.fdate
   from clean.holdings_wfcin as h
-  where h.wfcin in (select distinct wfcin from clean.deoni_wfcin TABLESAMPLE SYSTEM (0.05) REPEATABLE (182))
-  --in (500576, 200211)
+  where h.wfcin in (240388)
   --(240388, 500576, 200211)
   order by wfcin, fdate
 ),
@@ -41,16 +40,18 @@ share_data as (
     hl.shares,
     s.date as stock_date,
     s.prc,
+    lag(s.prc) over (partition by hl.cusip order by s.date) as lag_prc,
     s.ret,
     s.shrout,
     s.cfacshr,
+    lag(s.cfacshr) over (partition by hl.cusip order by s.date) as lag_cfacshr,
     s.exchcd,
-    first_value(s.cfacshr) OVER(partition by hl.wfcin, hl.cusip, hl.fdate order by hl.fdate) as init_cfacshr
+    first_value(s.cfacshr) OVER (partition by hl.wfcin, hl.cusip, hl.fdate order by hl.fdate) as init_cfacshr
   from h_lead as hl
   left join stocks.daily as s on
     hl.cusip = s.ncusip AND
-    hl.lead_fdate > s.date AND
-    hl.fdate <= s.date
+    hl.lead_fdate >= s.date AND
+    hl.fdate < s.date
   order by 
     hl.wfcin,
     hl.fdate,
@@ -69,7 +70,7 @@ share_data_val as (
   -- calculate value of each share type
   select
     sd.*,
-    sd.shares_adj * sd.prc as val
+    sd.shares * sd.init_cfacshr / sd.lag_cfacshr * sd.lag_prc as lag_val
   from share_data_adj as sd
   where sd.prc is not null
 ),
@@ -77,7 +78,7 @@ share_data_tot_daily_val as (
   -- calculate daily portfolio value
   select
     sd.*,
-    COALESCE(sum(val) over (partition by wfcin, stock_date), 0) as total_val
+    COALESCE(sum(lag_val) over (partition by wfcin, stock_date), 0) as lag_total_val
   from share_data_val as sd
 ),
 share_data_weight as (
@@ -95,7 +96,7 @@ share_data_returns as (
     COALESCE(ln(1 + ret * weight), 0) ln_ret_weighted
   from share_data_weight
 ),
-tmp as (
+daily as (
   select
     r.wfcin,
     r.fdate,
@@ -111,4 +112,5 @@ tmp as (
 )
 select 
   *
-from tmp
+from share_data_returns
+order by wfcin, cusip, stock_date

@@ -14,9 +14,9 @@ database=copycats
 postgresUser=postgres
 postgresDb=postgres
 
-
 zipDir="/cygdrive/c/Program Files/7-zip/"
 export PATH=$PATH:"$zipDir"
 
+
 # Call SQL
-"$psql" -U $username -d $database -f  "./sql/create-clean-dataset.sql"
+"$psql" -U $username -d $database -f  "./sql/import-cash.sql"

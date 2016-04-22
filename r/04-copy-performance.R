@@ -8,13 +8,14 @@ source("./r/functions.R")
 # work anyway, because there is not data downloaded for earlier points in time)
 analysisStartDate <- as.Date('1990-01-01')
 
-
-# get list of of unique fund identifiers
+# get list of of unique fund identifiers (wfcin)
 wfcinList <- getWfcinList()
+# get average cash-TNA ratio
 averageCash <- getAverageCash()
 
 
-# Count fund numbrs do display progress
+# Cycle set-up
+# Count fund numbers do display progress
 nWfcin <- length(wfcinList)
 iWfcin <- 1
 
