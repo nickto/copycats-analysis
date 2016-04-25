@@ -469,14 +469,14 @@ This data was extracted on 2016-04-08.
 | Step | Field | Value |
 | ---- | ------- | ------ |
 | **Step 1: Choose your date range.** | Date range | `1990-01-01`--`2015-12-31` |
-| **Step 2: Apply your company codes.** | Select an option for entering company codes | Upload a `cusip-list.txt` file that results from running `03-export-cusips.R` |
+| **Step 2: Apply your company codes.** | Select an option for entering company codes (`ncusip`) | Upload a `cusip-list.txt` file that results from running `03-export-cusips.R` |
 |  | Conditional Statements (Optional) | None (leave fields empty) |
 | **Step 2: Query Variables.** | Select | All |
 | **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
 | | Compression Type | `gzip (*.gz)` |
 | | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
 
-The output is saved into `~/data/` directory under the name `wrds-crsp-stocks-19900101-20151231.csv.gz`.
+The output is saved into `~/data/` directory under the name `wrds-crsp-stocks-daily-19900101-20151231.csv.gz`.
 
 #### Data request summary
 
@@ -484,10 +484,10 @@ Data request summary:
 
 | Key | Value |
 | ------------- | ------------- |
-| Data Request ID | c15756b0ac0282d7 |
+| Data Request ID | 4650f4eafedbc982 |
 | Libraries/Data Sets | crspa/dsf  / |
 | Frequency/Date Range | day / 01Jan1990 - 31Dec2015 |
-| Search Variable | CUSIP |
+| Search Variable | NCUSIP |
 | Input Codes all item(s) 55555 item(s) | `31806710 -etc-` |
 | Conditional Statements | n/a |
 | Output format/Compression | csv / gz |

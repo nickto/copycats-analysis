@@ -411,3 +411,38 @@ CREATE INDEX IF NOT EXISTS
   tbill_dret_caldt_idx
 ON
   clean.tbill_dret(caldt);
+-------------------------------------------------------------------------------
+-- link TR fund characteristics with wfcin
+CREATE TABLE IF NOT EXISTS clean.tr_fc_wfcin AS (
+  select
+    c.*,
+    w.wfcin
+  from tr.fund_characteristics as c
+  left join clean.deoni_wfcin as w on
+    w.fundno = c.fundno AND
+    w.fdate = c.fdate
+);
+CREATE INDEX IF NOT EXISTS
+  tr_fc_wfcin_wfcin
+on
+  clean.tr_fc_wfcin(wfcin);
+CREATE INDEX IF NOT EXISTS 
+  tr_fc_wfcin_fdate
+on
+  clean.tr_fc_wfcin(fdate);
+-------------------------------------------------------------------------------
+-- stock dates
+CREATE TABLE IF NOT EXISTS clean.stock_dates as (
+  select 
+    date,
+    lag(date) over () as lag_date,
+    lead(date) over () as lead_date
+  from (select
+          date,
+          count(date)
+        from stocks.daily
+        group by date) as date_count
+  where count > 1000
+);
+CREATE INDEX IF NOT EXISTS stock_dates_date_idx
+ON clean.stock_dates(date);

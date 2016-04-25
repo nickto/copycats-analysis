@@ -60,5 +60,5 @@ CREATE INDEX ON mflinks.link2(cusip8);
 
 -- Create Stocks indeces
 CREATE INDEX ON stocks.daily(date);
-CREATE INDEX ON stocks.daily(cusip);
 CREATE INDEX ON stocks.daily(ncusip);
+CREATE INDEX ON stocks.daily(date, ncusip);

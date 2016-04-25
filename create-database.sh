@@ -521,7 +521,7 @@ else
 
     echo Remove temporary files
     rm ./data/clean/*
-    if [ $? -ne 0] ; then
+    if [ $? -ne 0 ] ; then
 	echo Removing temporary files exitted with errors.
 	exit 2;    
     fi
@@ -534,10 +534,11 @@ echo ---------------------------------------------------------------------------
 # Create table indeces
 echo Create indeces
 
-# "$psql" -U $username -d $database -f './sql/index-tables.sql'
+ "$psql" -U $username -d $database -f './sql/index-tables.sql'
 
 
 
 
 
 exit 0
+

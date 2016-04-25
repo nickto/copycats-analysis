@@ -2,43 +2,37 @@
 -------------------------------------------------------------------------------
 -- Copy returns
 -------------------------------------------------------------------------------
-  holdings_data_dates as (
+-- 
+  holdings_dates as (
     -- Select dates at which holdings change: fdate and lead(fdate) for every fund (wfcin)
+    -- Also select lead and lag fdate
+    -- If lead_fdate is missing, then just select a date that is one year in the future compared to the last fdate
     select 
       dhw.wfcin,
       dhw.fdate,
       lead(dhw.fdate, 1, dhw.fdate + 365) over 
-        (partition by dhw.wfcin order by dhw.fdate asc) as lead_fdate
+        (partition by dhw.wfcin order by dhw.fdate asc) as lead_fdate,
+      lag(dhw.fdate) over 
+        (partition by dhw.wfcin order by dhw.fdate asc) as lag_fdate 
     from (select distinct on (wfcin, fdate)
             wfcin,
             fdate
           from clean.holdings_wfcin
-          where wfcin in (105658) ) as dhw --105658 500576
-  ),
-  categories as (
-    select distinct on (hdd.wfcin, hdd.fdate)
-      hdd.*,
-      cfw.caldt,
-      cfw.per_com
-    from holdings_data_dates as hdd
-    left join clean.crsp_fs_wfcin as cfw ON
-      hdd.wfcin = cfw.wfcin AND
-      hdd.fdate >= cfw.caldt
-    order by
-      hdd.wfcin,
-      hdd.fdate,
-      cfw.caldt DESC
+          where wfcin in (101139) ) as dhw --105658 500576
+     where dhw.fdate >= '1990-01-01'
   ),
   holdings_data as (
-    -- add holdings data for each of the selected days in holdings_data_dates
+    -- add holdings data for each of the selected days in holdings_dates
     select
-      hdd.*,
+      hd.wfcin,
+      hd.fdate,
+      hd.lead_fdate,
       hw.cusip,
       hw.shares
-    from holdings_data_dates as hdd
+    from holdings_dates as hd
     left join clean.holdings_wfcin as hw on
-      hdd.wfcin = hw.wfcin AND
-      hdd.fdate = hw.fdate
+      hd.wfcin = hw.wfcin AND
+      hd.fdate = hw.fdate
   ),
   stock_data_extra as (
     -- Select data for stocks that are part of holdings.
@@ -115,7 +109,7 @@
       sr.fdate,
       sr.lead_fdate,
       sr.stock_date,
-      sum(sr.ret_weighted) - 1 as dret
+      sum(sr.ret_weighted) as dret
     from stock_returns as sr
     group by 
       sr.wfcin,
@@ -125,6 +119,108 @@
   ),
   -------------------------------------------------------------------------------------------------
   -------------------------------------------------------------------------------------------------
+  fdate_to_fdate_returns as (
+    select
+      hd.wfcin,
+      hd.fdate,
+      exp(sum(ln(1 + dr.dret))) - 1 as fdate_stock_ret
+    from holdings_dates as hd
+    left join daily_returns as dr on
+      hd.wfcin = dr.wfcin AND
+      hd.fdate = dr.fdate
+    group by 
+      hd.wfcin,
+      hd.fdate
+  ),
+  categories_dates_extra as (
+    -- Select category  multiple dates per each fdate
+    select
+      hdd.*,
+      cfw.caldt
+    from holdings_dates as hdd
+    left join clean.crsp_fs_wfcin as cfw ON
+      hdd.wfcin = cfw.wfcin AND
+      hdd.fdate >= cfw.caldt
+    where cfw.per_cash is not null
+    order by
+      hdd.wfcin,
+      hdd.fdate,
+      cfw.caldt DESC
+  ),
+  category_dates as (
+    select distinct on (cda.wfcin, cda.fdate)
+      -- Select only one caldt (date for category information) per one fdate
+      cda.wfcin,
+      cda.fdate,
+      cda.lead_fdate,
+      cda.lag_fdate,
+      min(cda.fdate) over (partition by cda.wfcin) as min_fdate,
+      case when coalesce(caldt < lag_fdate, FALSE) then
+        -- caldt is already stored, therefore no need to update it to outdated value
+        NULL
+      else
+        caldt
+      end as caldt
+    from categories_dates_extra as cda
+  ),
+  category_data_raw as (
+    select distinct on (cd.wfcin, cd.fdate, cd.caldt)
+      -- Select data for each category date. There should be no duplcates per each
+      -- caldt, but to ensure this select only one caldt per fdate
+      cd.wfcin,
+      cd.fdate,
+      cd.lead_fdate,
+      cd.lag_fdate,
+      cd.min_fdate,
+      cfw.tna_latest * 1000000 tna_latest,
+      case when (cd.fdate = cd.min_fdate)
+                and ((cfw.per_com is null) OR  (cfw.per_cash = 0 and cfw.per_com = 0)) 
+                then
+        100 - 
+        (select avg(avg) from (select
+                        avg(per_cash)
+                      from clean.crsp_fs_wfcin
+                      where caldt >= '1990-01-01'
+                      group by date_part('year', caldt)) as avg_per_year ) 
+      else
+        cfw.per_com
+      end  as per_com
+      ,
+      case when (cd.fdate = cd.min_fdate)
+                and ((cfw.per_cash is null) OR  (cfw.per_cash = 0 and cfw.per_com = 0)) 
+                then
+        (select avg(avg) from (select
+                        avg(per_cash)
+                      from clean.crsp_fs_wfcin
+                      where caldt >= '1990-01-01'
+                      group by date_part('year', caldt)) as avg_per_year )
+      else
+        cfw.per_cash
+      end  as per_cash,
+      lag(per_com) over (partition by cd.wfcin order by cd.fdate) as lag_per_com,
+      ffr.fdate_stock_ret,
+      lag(ffr.fdate_stock_ret) over (partition by ffr.wfcin order by ffr.fdate) as lag_stock_ret
+    from category_dates as cd
+    left join clean.crsp_fs_wfcin as cfw on
+      cd.wfcin = cfw.wfcin AND
+      cd.caldt = cfw.caldt
+    left join fdate_to_fdate_returns as ffr on
+      cd.wfcin = ffr.wfcin AND
+      cd.lag_fdate = ffr.fdate
+  ),
+    
+  category_data_inferred as (
+    select
+      cd.wfcin,
+      cd.fdate,
+      case when per_com is null then
+        (lag(cd.per_com) over (partition by cd.wfcin order by cd.fdate)) * cd.lag_stock_ret
+      else
+        cd.per_com
+      end
+    from category_data_raw as cd
+  ),
+  
   first_holdings_day as (
     -- select first day at which we already store new holdings (this is usually the next day after fdate)
     select distinct on (sd.wfcin, sd.fdate, sd.cusip)
@@ -155,78 +251,24 @@
       coalesce(f.fdate, l.lead_fdate) as fdate,
       coalesce(f.lag_stock_date, l.stock_date) as chg_date,
       coalesce(f.cusip, l.cusip) as cusip,
-      coalesce(f.weight, 0) - coalesce (l.weight, 0) as weight_chg
+      coalesce(f.weight, 0) as weight_prev,
+      coalesce (l.weight, 0) as weight_curr,
+      --cd.tna_latest,
+      cd.per_com--,
+      --cd.per_cash
     from first_holdings_day as f
     full join last_holdings_day as l ON
       f.wfcin = l.wfcin AND
       f.fdate = l.lead_fdate AND
       f.cusip = l.cusip
-  ),
-  costs_preset as (
-    select
-      wc.*,
-      s.prc,
-      case when wc.weight_chg >= 0 then
-        true 
-      else 
-        false
-      end as buy,
-      abs(s.prc * s.shrout * 1000) as market_cap,
-      abs(s.prc * s.shrout) as market_cap_thsds,
-      case when s.exchcd = 3 then 
-        1
-      else 
-        0
-      end as nasdaq
-    from weight_chg as wc
-    left join stocks.daily as s on
-      s.ncusip = wc.cusip AND
-      s.date = wc.chg_date
-  ),
-  costs_by_stock as (
-    select 
-      cp.*,
-      case when cp.buy then
-        abs((1.098 + 0.336 * cp.nasdaq - 0.084 * ln(cp.market_cap_thsds) + 13.807 * (1 / cp.prc)) * cp.weight_chg)
-      else 
-        abs((0.979 + 0.058 * cp.nasdaq - 0.059 * ln(cp.market_cap_thsds) +  6.537 * (1 / cp.prc)) * cp.weight_chg)
-      end as costs_term_a,
-      case when cp.buy then
-        abs(0.092 / cp.market_cap * cp.weight_chg * cp.weight_chg)
-      else
-        abs(0.214 / cp.market_cap * cp.weight_chg * cp.weight_chg)
-      end as costs_term_b
-    from costs_preset as cp
-  ),
-  fdate_chg_date_link as (
-    SELECT
-      wfcin,
-      fdate,
-      mode()  WITHIN GROUP (ORDER BY chg_date) as chg_date
-    FROM costs_preset
-    group by 
-      wfcin,
-      fdate
-  ),
-  costs as (
-    select
-      cbs.wfcin,
-      cbs.fdate,
-      fcdl.chg_date,
-      sum(cbs.costs_term_a) as costs_term_a, -- do nothing, just add a + b
-      sum(cbs.costs_term_b) as costs_term_b -- should be multiplied by tna * per_com
-    from costs_by_stock as cbs
-    left join fdate_chg_date_link as fcdl on
-      fcdl.wfcin = cbs.wfcin AND
-      fcdl.fdate = cbs.fdate
-    group by 
-      cbs.wfcin,
-      cbs.fdate,
-      fcdl.chg_date
+    left join category_data_inferred as cd on
+      f.wfcin = cd.wfcin AND
+      f.fdate = cd.fdate
   )
+
+  
  
   
 select
-* 
-from categories
-order by wfcin, fdate, caldt
+  *
+from category_data_inferred

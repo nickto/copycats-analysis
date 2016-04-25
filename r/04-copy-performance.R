@@ -21,7 +21,7 @@ iWfcin <- 1
 
 # Loop through all funds
 set.seed(182)
-for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
+for (wfcin in (sample_n(as.data.frame(wfcinList), 1))[,1]) {
     #wfcin <- 102441 # problematic
     #wfcin <- 107167 # working
     #wfcin <- 106730 # long
