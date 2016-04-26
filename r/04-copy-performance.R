@@ -1,165 +1,187 @@
-s <- Sys.time()
 source("./r/02-connect-to-db.R")
-source("./r/functions.R")
+source("./r/05-functions.R")
 
-# Move everything to data base
-
-# Date at which to start the analysis (if you change it to earlier, it won't
-# work anyway, because there is not data downloaded for earlier points in time)
-analysisStartDate <- as.Date('1990-01-01')
+s <- Sys.time()
+write(paste("\nStarted at:", s), file = "log.txt",
+          append = TRUE, sep = " ")
 
 # get list of of unique fund identifiers (wfcin)
 wfcinList <- getWfcinList()
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
 
-
-# Cycle set-up
-# Count fund numbers do display progress
-nWfcin <- length(wfcinList)
-iWfcin <- 1
+# create schema for temporay tables (there is at least one in the code)
+sql_command <- paste0("create schema if not exists tmp")
+dbSendQuery(con, sql_command)
+# create schema for resulting tables
+sql_command <- paste0("create schema if not exists performance")
+dbSendQuery(con, sql_command)
 
 # Loop through all funds
-set.seed(182)
-for (wfcin in (sample_n(as.data.frame(wfcinList), 1))[,1]) {
-    #wfcin <- 102441 # problematic
-    #wfcin <- 107167 # working
-    #wfcin <- 106730 # long
-    #wfcin <- 410706 # another problematic fund (straight line)
+set.seed(1200)
+for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
+    # add timing information
+    t <- system.time({
 
-
-    # Process outline:
-    # 1. select monthtly fund returns
-    # 2. select all information about fund holdings
-    # 3. work with daily copycat returns on the following timeline:
-    #   all dates from stock return data base that are between the first
-    #   holding disclosure date and the last fund return date
-
-    # Select all monthly returns for the current funds
-    fundReturns <- getFundReturns(wfcin, frequency = "monthly")
-    if(isEmptyDataFrame(fundReturns)) {next()}
-    # Select fund holdings information
-    holdings <- getFundHoldings(wfcin)
-    if(isEmptyDataFrame(holdings)) {next()}
-    holdingsDates <- getHoldingsDates(holdings)
-    holdingsDates <- holdingsDates[holdingsDates >= analysisStartDate]
-    # Obtain start and end date of our analysis
-    startDate <- min(holdingsDates)
-    endDate <- min(
-        max(fundReturns$caldt),
-        max(holdingsDates) + 183
-    )
-
-
-    # Check if the fund has some info in the analysis period
-    if(startDate >= endDate || is.na(endDate)) {next()}
-
-    # Select all information about holdings that we will need later
-    stockData <- getStockData(wfcin, startDate, endDate)
-    if(isEmptyDataFrame(stockData)) {next()}
-    # Select dates on which holdings have changed
-    stockDataDates <- getStockDataDates(stockData)
-
-    # List of dates to work with
-    dateList <- sort(stockDataDates[stockDataDates >= startDate &&
-                                   stockDataDates <= endDate])
-
-    # Select information about portfolio composition (equity, cash etc)
-    categoryData <- getCategoryData(holdingsDates, wfcin)
-
-    # This data frame stores returns
-    copycatReturns <- data.table(
-        date = dateList,
-        stockR = as.numeric(NA),    # domestic equity return
-        stockW = as.numeric(NA),    # domestic equity weight
-        stockTc = as.numeric(NA),   # trading costs expressed as negative returns
-        cashR = as.numeric(NA),     # cash return
-        cashW = as.numeric(NA),     # cash weight
-        otherR = as.numeric(NA),     # other returns
-        otherW = as.numeric(NA))     # other weight
-
-
-    portfolio <- data.table()
-    for (today in dateList) {
-        #today <- dateList[2]
-        # Calculate returns (this is done always, unless this is the first day,
-        # in which case portfolio variable is an empty data frame)
-        if(!isEmptyDataFrame(portfolio)) {
-            # Returns
-            # Domestic equity
-            portfolioData <- getPortfolioData(portfolio,
-                                              stockData,
-                                              dateList,
-                                              today)
-            portfolioReturn <- getPortfolioReturn(portfolioData)
-            # store domestic equity return
-            copycatReturns[date == today, stockR := portfolioReturn]
-            # adjust for splits
-            portfolio <- splitAdjust(portfolioData)
-
-            # Cash
-
-            # Other
-
-
-            # Weights
-            # Currently just drag the previous value. Later should also adjust
-            # for differences in returns
-            getNewWeights(copycatReturns, today, yesterday)
-
+    # run whole code through tryCatsh to avoid stopping the program due to errors
+    # in a fund
+    errorInCalculations <- FALSE
+    errorInWriteToDb <- FALSE
+    tryCatch(suppressWarnings({
+        # get start and end dates of fund for analysis
+        startEndDates <- getStartEndDates(wfcin)
+        # check whether there is a period to analyze
+        if(startEndDates[1,start_date] > startEndDates[1,end_date]) {
+            # start date is greater than end date: skip this fund
+            next()
         }
 
-        # Check if we need to update our portfolio
-        # Appropriate holdings date. NULL if there is no need to update holdings
-        # (checks if there is new information about holdings since previous day)
-        hDate <- updateHoldingsDate(today, holdingsDates, dateList)
 
-        if (!is.null(hDate) && hDate != -Inf) {
-            # print progress
-            print(paste(as.Date(hDate), as.Date(dateList[length(dateList)])))
-            # update equity portfolio holdings
-            portfolio <- getPortfolio(holdings, hDate)
+        # get periods with key dates
+        # The returned table has the following columns:
+        # - wfcin: unique fund identifier
+        # - period_no:             number of period
+        # - new_holdings:          flag whether there should be a rebalancing
+        # - returns_from_date:     date (including) from which to calculate returns
+        # - returns_to_date:       date (including) till which to calculate returns
+        # - stock_data_date:       date at which to look share-level information of
+        #                          holdings (used to calculate initial weights)
+        # - holdings_fdate:        fdate of current holdings (used for linking)
+        # - holdings_returns_from: date from which current holdings started to
+        #                          accumulate returns (used for calculating current
+        #                          weights)
+        periodKeyDates <- getPeriodDates(wfcin, startEndDates)
 
-            # Update category weights
-            copycatReturns[date == today, stockW := categoryData[fdate == hDate, stockW]]
-            copycatReturns[date == today, cashW :=  categoryData[fdate == hDate, cashW]]
-            copycatReturns[date == today, otherW := categoryData[fdate == hDate, otherW]]
+        # get holdings data, weights as of the first date of holdings information
+        holdingsData <- getHoldingsData(wfcin, periodKeyDates)
 
-            # calculate trade costs
-        }
+        # get all stock data
+        stockData <- getAllStockData(holdingsData, startEndDates)
 
-        yesterday <- today
+
+        # add cusips to period key dates and extract each period return
+        # also add buy and sell price:
+        # - buy price is the price on the day before the beginning of the period
+        #   (the day on which the stock is actually bought)
+        # - sell price is the price on the last day of the period
+        periodStockData <- getPeriodStockData(periodKeyDates, holdingsData, stockData)
+
+
+        # get gross returns of stocks in the portfolio for the period
+        periodStockReturns <- getPeriodStockReturns(periodStockData, periodKeyDates)
+        periodCashReturns <- getPeriodCashReturns(periodKeyDates)
+        periodOtherReturns <- getPeriodOtherReturns(periodKeyDates)
+
+        periodReturns <- mergeReturns(periodStockReturns, periodCashReturns, periodOtherReturns)
+
+        # get weights and returns of each class
+        returnsWeightsOfClasses <- getCategoriesData(periodKeyDates, periodReturns, averageCash)
+
+
+        # add stock trading costs
+        costComponents <- getTradingCosts(periodKeyDates, returnsWeightsOfClasses,
+                                          stockData)
+        setkey(costComponents, period_no)
+
+        # get fund returns
+        periodReturns <- getPeriodReturns(returnsWeightsOfClasses, costComponents,
+                                          periodKeyDates)
+
+        # get monthly returns
+        monthlyReturns <- getMonthlyReturns(periodReturns)
+
+        # get actual monthly returns of a fund
+        actualReturns <- getActualReturns(wfcin, startEndDates)
+
+        # merge copied and actual returns
+        monthlyReturns <- merge(
+            monthlyReturns,
+            actualReturns,
+            by = c("year", "month"),
+            all = TRUE
+        )
+
+        # add wfcin for identification purposes
+        monthlyReturns[, wfcin := wfcin]
+
+
+    }), error=function(cond) {
+        message(paste("Error in fund calculations; wfcin = ", wfcin))
+        errorInCalculations <<- TRUE
+    #}, warning=function(cond) {
+    #    print("warning")
+    #    print(cond)
+    },finally=function(cond){
+        # maybe we should write something here... but later!
+    })
+
+
+    # write to db only if there were no errors in calculations
+    if(!errorInCalculations) {
+        # write table to the database
+        tryCatch(suppressWarnings({
+            writeTableToCopycats(monthlyReturns, wfcin)
+        }),error=function(cond) {
+            message(paste("Error in fund writing to db; wfcin = ", wfcin))
+            errorInWriteToDb <<- TRUE
+        #}, warning=function(cond) {
+        #    print("warning")
+        #    print(cond)
+        },finally=function(cond){
+            # maybe we should write something here... but later!
+        })
+
     }
 
 
-    # cR <- select(copycatReturns, date, stockR) %>%
-    #     mutate(year = year(date), month = month(date)) %>%
-    #     mutate(ym = paste(year, month, sep = "-")) %>%
-    #     select(ym, stockR)
-    # cR <- summarize(group_by(cR, ym),
-    #                 ret = exp(sum(log(stockR + 1), na.rm = TRUE)) - 1)
-    #
-    # fR <- select(fundReturns, caldt, mret) %>%
-    #     mutate(year = year(caldt), month = month(caldt)) %>%
-    #     mutate(ym = paste(year, month, sep = "-")) %>%
-    #     select(caldt, ym, mret)
-    #
-    # tmp <- full_join(cR, fR, by = 'ym') %>%
-    #     rename(date = caldt, copied = ret, actual = mret) %>%
-    #     select(date, actual, copied)
-    #
-    # tmp <- xts(select(tmp, actual, copied), order.by = tmp$date)
-    # png(paste0('./export/images/', wfcin, ".png"))
-    # print(autoplot(tmp))
-    # dev.off()
-
-    print(copycatReturns)
+    }) # this bracket ends system.time() function
 
 
-    print(paste0(iWfcin,"/",nWfcin))
-    iWfcin = iWfcin + 1
+    # add information to log
+    messageToLog <- addLogEntry(wfcin, t, errorInCalculations, errorInWriteToDb)
+
+    # print message
+    print(messageToLog)
+
+
+
+    # graphs
+    # ind <- monthlyReturns
+    # ind[, index_net_original := cumprod(1 + net_ret_act)]
+    # ind[, index_net_copied := cumprod(1 + net_ret_10m_cop)]
+    # ind[, index_gross_original := cumprod(1 + gross_ret_act)]
+    # ind[, index_gross_copied := cumprod(1 + gross_ret_cop)]
+    #
+    # indN <- as.xts.data.table(ind[, list(caldt,index_net_original,index_net_copied)])
+    # indG <- as.xts.data.table(ind[, list(caldt,index_gross_original,index_gross_copied)])
+    #
+    # autoplot(indG) +
+    #     ggtitle("Comparison of gross return indeces") +
+    #     xlab("Date") +
+    #     ylab("Index value")
+    # g$panel$layout$variable <- c("Copycat", "Original")
+    # grid.draw(ggplot_gtable(g))
+    # autoplot(indN) +
+    #     ggtitle("Comparison of net return indeces") +
+    #     xlab("Date") +
+    #     ylab("Index value")
+    #
+    # retN <- as.xts.data.table(ind[, list(caldt,net_ret_act,net_ret_10m_cop)])
+    # retG <- as.xts.data.table(ind[, list(caldt,gross_ret_act,gross_ret_cop)])
+    #
+    # autoplot(retN)
+    # autoplot(retG)
+
+
+
+    #print(paste0(iWfcin,"/",nWfcin))
+    #iWfcin = iWfcin + 1
     gc()
+
 }
 
+print(paste("Finished in:", Sys.time() - s))
 
-print(Sys.time() - s)
+
+
+#dbDisconnect(con); rm(list = ls())

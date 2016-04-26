@@ -534,9 +534,13 @@ echo ---------------------------------------------------------------------------
 # Create table indeces
 echo Create indeces
 
- "$psql" -U $username -d $database -f './sql/index-tables.sql'
+"$psql" -U $username -d $database -f './sql/index-tables.sql'
 
+# Import cash and other data
+bash import-cash-other-returns.sh
 
+# Create clean dataset
+bash create-clean-dataset.sh
 
 
 
