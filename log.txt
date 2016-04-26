@@ -1,0 +1,30 @@
+
+Started at: 2016-04-26 12:00:35
+wfcin: 101729 . Time elapsed: 0.829999999999927 . Calculations: OK. Write to DB: OK.
+wfcin: 410466 . Time elapsed: 75.7099999999991 . Calculations: OK. Write to DB: OK.
+
+Started at: 2016-04-26 12:03:26
+wfcin: 101729 . Time elapsed: 0.609999999999999 . Calculations: OK. Write to DB: OK.
+
+Started at: 2016-04-26 12:03:59
+
+Started at: 2016-04-26 12:07:50
+wfcin: 101729 . Time elapsed: 29.12 . Calculations: OK. Write to DB: OK.
+wfcin: 410466 . Time elapsed: 0.730000000000018 . Calculations: OK. Write to DB: OK.
+wfcin: 106025 . Time elapsed: 2.22999999999996 . Calculations: OK. Write to DB: OK.
+
+Started at: 2016-04-26 12:18:13
+
+Started at: 2016-04-26 12:26:49
+wfcin: 101729 . Time elapsed: 98.47 . Calculations: OK. Write to DB: OK.
+wfcin: 410466 . Time elapsed: 22.5 . Calculations: OK. Write to DB: OK.
+wfcin: 106025 . Time elapsed: 69.9000000000001 . Calculations: OK. Write to DB: OK.
+wfcin: 101876 . Time elapsed: 38.8799999999999 . Calculations: OK. Write to DB: OK.
+wfcin: 105658 . Time elapsed: 107.47 . Calculations: OK. Write to DB: OK.
+
+Started at: 2016-04-26 12:36:28
+wfcin: 101729 . Time elapsed: 95.0500000000002 . Calculations: OK. Write to DB: OK.
+wfcin: 410466 . Time elapsed: 30.7199999999998 . Calculations: OK. Write to DB: OK.
+wfcin: 106025 . Time elapsed: 73.8599999999997 . Calculations: OK. Write to DB: OK.
+wfcin: 101876 . Time elapsed: 37.1999999999998 . Calculations: OK. Write to DB: OK.
+wfcin: 105658 . Time elapsed: 84.8300000000004 . Calculations: OK. Write to DB: OK.

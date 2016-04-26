@@ -124,7 +124,7 @@ with
     select
       f.wfcin,
       greatest(f.min_fdate, r.min_caldt) as start_date,
-      least(f.max_fdate + 365, r.max_caldt) as end_date
+      least(f.max_fdate + 183, r.max_caldt) as end_date
     from min_max_fdate as f
     left join min_max_return_dates as r on
       f.wfcin = r.wfcin
@@ -401,6 +401,7 @@ select * from period_key_dates where returns_from_date <= returns_to_date order 
 getHoldingsData <- function(wfcin, periodKeyDates) {
     # get holdings in terms of number os shares
     fdates <- periodKeyDates[new_holdings == TRUE, holdings_fdate]
+    fdates <- fdates[!is.na(fdates)]
 
     fdatesStr <- paste(fdates, collapse = "', '")
     sql_command <- paste0("
@@ -426,8 +427,8 @@ getHoldingsData <- function(wfcin, periodKeyDates) {
     )
 
     # obtain prices
-    cusipsStr <- paste(unique(sharesData[, cusip]), collapse = "', '")
-    stockDatesStr <- paste(unique(sharesData[, stock_data_date]), collapse = "', '")
+    cusipsStr <- paste(unique(sharesData[!is.na(cusip), cusip]), collapse = "', '")
+    stockDatesStr <- paste(unique(sharesData[!is.na(stock_data_date), stock_data_date]), collapse = "', '")
 
     sql_command <- paste0("
         select
@@ -460,7 +461,7 @@ getHoldingsData <- function(wfcin, periodKeyDates) {
 }
 
 getAllStockData <- function(holdingsData, startEndDates) {
-    cusipsStr <- paste(unique(holdingsData[, cusip]), collapse = "', '")
+    cusipsStr <- paste(unique(holdingsData[!is.na(cusip), cusip]), collapse = "', '")
 
     sql_command <- paste0("
         select
@@ -471,13 +472,13 @@ getAllStockData <- function(holdingsData, startEndDates) {
           date <= '", startEndDates[,end_date], "'
     ")
     stockDates <- as.data.table(dbGetQuery(con, sql_command))
-    stockDatesStr <- paste(unique(stockDates[,date]), collapse = "', '")
+    stockDatesStr <- paste(unique(stockDates[!is.na(date),date]), collapse = "', '")
 
     sql_command <- paste0("
         select
           s.ncusip as cusip,
           s.date,
-          abs(s.prc),
+          abs(s.prc) as prc,
           abs(s.prc) * s.shrout as mcap,
           case when s.ret < -1 then NULL else s.ret end as ret,
           coalesce(case when exchcd = 3 then 1 else 0 end, 0) as nasdaq
@@ -897,17 +898,17 @@ getMonthlyReturns <- function(periodReturns) {
             stock_ret = logsum(stock_period_ret),
             cash_ret = logsum(cash_period_ret),
             other_ret = logsum(other_period_ret),
-            gross_return = logsum(gross_return),
-            costs_10m = logsum(costs_10m),
-            costs_50m = logsum(costs_50m),
-            costs_250m = logsum(costs_250m),
-            mgmt_fees = 0.2 / 12,
-            ac_ret_10m = logsum(net_ret_10m), # ac_ : after cost
-            ac_ret_50m = logsum(net_ret_50m),
-            ac_ret_250m = logsum(net_ret_250m),
-            net_ret_10m = logsum(net_ret_10m) - 0.2 / 12,
-            net_ret_50m = logsum(net_ret_50m) - 0.2 / 12,
-            net_ret_250m = logsum(net_ret_250m) - 0.2 / 12
+            gross_ret_cop = logsum(gross_return),
+            costs_10m_cop = logsum(-costs_10m),
+            costs_50m_cop = logsum(-costs_50m),
+            costs_250m_cop = logsum(-costs_250m),
+            mgmt_fees_cop = 0.2 * 0.01 / 12,
+            atc_ret_10m_cop = logsum(net_ret_10m), # ac_ : after cost
+            atc_ret_50m_cop = logsum(net_ret_50m),
+            atc_ret_250m_cop = logsum(net_ret_250m),
+            net_ret_10m_cop = logsum(net_ret_10m) - 0.2 * 0.01 / 12,
+            net_ret_50m_cop = logsum(net_ret_50m) - 0.2 * 0.01 / 12,
+            net_ret_250m_cop = logsum(net_ret_250m) - 0.2 * 0.01 / 12
             ), by = list(year, month)]
 
     setkey(monthlyReturns, year, month)
@@ -920,7 +921,7 @@ getActualReturns <- function(wfcin, startEndDates) {
         select distinct on (r.wfcin, r.caldt)
           r.wfcin,
           r.caldt,
-          r.mret as net_ret,
+          r.mret as net_ret_act,
           coalesce((first_value(s.exp_ratio) over (partition by r.wfcin, r.caldt order by s.caldt desc)) / 12,
             avg(s.exp_ratio) over(),
             (select avg(exp_ratio) from clean.crsp_fs_wfcin) ) as m_exp
@@ -934,11 +935,63 @@ getActualReturns <- function(wfcin, startEndDates) {
     mret <- as.data.table(dbGetQuery(con, sql_command))
     mret <- mret[caldt >= startEndDates[, start_date] &
                      caldt <= startEndDates[, end_date], ]
-    mret[, gross_ret := net_ret + m_exp]
+    mret[, gross_ret_act := net_ret_act + m_exp]
     mret[, year := year(caldt)]
     mret[, month := month(caldt)]
 
     setkey(mret, year, month)
 
     return(mret)
+}
+
+writeTableToCopycats <- function(monthlyReturns, wfcin) {
+    # check if this fund is already in db
+     sql_command <- paste0("
+        select
+          wfcin
+        from performance.monthly
+        where wfcin = '", wfcin, "'
+        limit 1
+    ")
+     tryCatch(
+        empty <- isEmptyDataTable(as.data.table(dbGetQuery(con, sql_command))),
+        error = function(cond) {
+            empty <- TRUE
+        })
+
+
+     if(!empty) {
+         # database already there
+         return(FALSE)
+     }
+
+    # write table
+    dbWriteTable(con, c("performance","monthly"),
+                 value = monthlyReturns,
+                 append = TRUE,
+                 row.names = FALSE)
+    return(TRUE)
+}
+
+addLogEntry <- function(wfcin, t, errorInCalculations, errorInWriteToDb) {
+    timeElapsed <- t[["elapsed"]]
+    messageToLog <- ""
+    messageToLog <- paste("wfcin:", wfcin, ". Time elapsed:", timeElapsed, ".")
+    messageToLog <- paste(messageToLog, "Calculations:")
+    if(!errorInCalculations) {
+        messageToLog <- paste(messageToLog, "OK.")
+
+        messageToLog <- paste(messageToLog, "Write to DB:")
+        if(!errorInWriteToDb) {
+            messageToLog <- paste(messageToLog, "OK.")
+        } else {
+            messageToLog <- paste(messageToLog, "ERROR.")
+        }
+    } else {
+        messageToLog <- paste(messageToLog, "ERROR.", "Write to DB: skipped.")
+    }
+    write(messageToLog, file = "log.txt",
+          append = TRUE, sep = " ")
+
+    return(messageToLog)
 }
