@@ -919,20 +919,34 @@ getMonthlyReturns <- function(periodReturns) {
 
 getActualReturns <- function(wfcin, startEndDates) {
     sql_command <- paste0("
-        select distinct on (r.wfcin, r.caldt)
-          r.wfcin,
-          r.caldt,
-          r.mret as net_ret_act,
-          coalesce((first_value(s.exp_ratio) over (partition by r.wfcin, r.caldt order by s.caldt desc)) / 12,
-            avg(s.exp_ratio) over(),
-            (select avg(exp_ratio) from clean.crsp_fs_wfcin) ) as m_exp
-        from clean.mret_wfcin as r
-        left join clean.crsp_fs_wfcin as s on
-          s.wfcin = r.wfcin AND
-          s.caldt <= r.caldt
-        where r.wfcin = '", wfcin, "'
-        order by caldt
-        ")
+        with
+        avg_m_exp as (
+          select
+            avg(case when exp_ratio = -99 then NULL else exp_ratio end) as avg
+          from clean.crsp_fs_wfcin
+        ),
+        mreturns as (
+          select distinct on (r.wfcin, r.caldt)
+            r.wfcin,
+            r.caldt,
+            r.mret as net_ret_act,
+            coalesce((first_value(case when s.exp_ratio = -99 then NULL else exp_ratio end) over (partition by r.wfcin, r.caldt order by s.caldt desc)) / 12,
+              avg(s.exp_ratio) over(),
+              (select avg from avg_m_exp) ) as m_exp
+          from clean.mret_wfcin as r
+          left join clean.crsp_fs_wfcin as s on
+            s.wfcin = r.wfcin AND
+            s.caldt <= r.caldt
+          where r.wfcin = '", wfcin, "'
+          order by caldt
+        )
+        select
+          wfcin,
+          caldt,
+          net_ret_act,
+          m_exp
+        from mreturns
+    ")
     mret <- as.data.table(dbGetQuery(con, sql_command))
     mret <- mret[caldt >= startEndDates[, start_date] &
                      caldt <= startEndDates[, end_date], ]

@@ -1,5 +1,5 @@
 source("./r/02-connect-to-db.R")
-source("./r/05-functions.R")
+source("./r/04-copy-performance-functions.R")
 
 s <- Sys.time()
 write(paste("\nStarted at:", s), file = "log.txt",
@@ -19,7 +19,7 @@ dbSendQuery(con, sql_command)
 
 # Loop through all funds
 set.seed(1200)
-for (wfcin in (sample_n(as.data.frame(wfcinList), 5))[,1]) {
+for (wfcin in (sample_n(as.data.frame(wfcinList), 1))[,1]) {
     # add timing information
     t <- system.time({
 
