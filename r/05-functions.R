@@ -14,6 +14,7 @@ getWfcinList <- function() {
         wfcin
     FROM
         clean.deoni_wfcin
+    ORDER BY wfcin
     "
     wfcinList <- dbGetQuery(con, sql_command)
 
