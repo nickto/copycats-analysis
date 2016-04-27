@@ -904,11 +904,11 @@ getMonthlyReturns <- function(periodReturns) {
             costs_50m_cop = logsum(-costs_50m),
             costs_250m_cop = logsum(-costs_250m),
             mgmt_fees_cop = 0.2 * 0.01 / 12,
-            atc_ret_10m_cop = logsum(net_ret_10m), # ac_ : after cost
-            atc_ret_50m_cop = logsum(net_ret_50m),
+            atc_ret_10m_cop =  logsum(net_ret_10m), # atc_ : after trading cost
+            atc_ret_50m_cop =  logsum(net_ret_50m),
             atc_ret_250m_cop = logsum(net_ret_250m),
-            net_ret_10m_cop = logsum(net_ret_10m) - 0.2 * 0.01 / 12,
-            net_ret_50m_cop = logsum(net_ret_50m) - 0.2 * 0.01 / 12,
+            net_ret_10m_cop =  logsum(net_ret_10m) - 0.2 * 0.01 / 12,
+            net_ret_50m_cop =  logsum(net_ret_50m) - 0.2 * 0.01 / 12,
             net_ret_250m_cop = logsum(net_ret_250m) - 0.2 * 0.01 / 12
             ), by = list(year, month)]
 
