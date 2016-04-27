@@ -498,6 +498,9 @@ Data request summary:
 ## MFLINKS
 We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method.
 
+## S&P 1200 Global index
+We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method. However, it looks like it cam from Bloomberg.
+
 
 ## Cash return
 ### CRSP TREASURIES - Issue Descriptions and Daily Time Series
@@ -534,6 +537,37 @@ Data request summary:
 | Extra Variables and Parameters Selected | 4 |
 
 
+## Carhart factors
+### Fama-French Factors - Monthly Frequency
+This data was extracted on 2016-04-27.
+
+#### Query form
+
+| Step | Field | Value |
+| ---- | ------- | ------ |
+| **Step 1: Choose your date range.** | Date range | `1990-01`--`2016-01` |
+| **Step 2: Choose factors for query Variables.** | Select | All |
+| **Step 3: Select query output.** | Output Format | `comma-delimited text (*.csv) ` |
+| | Compression Type | `gzip (*.gz)` |
+| | Date Format | `YYMMDDs10. (e.g. 1984/07/25)` | 
+
+The output is saved into `~/data/` directory under the name `wrds-ff-monthly-199001-201601.csv.gz`.
+
+#### Data request summary
+
+Data request summary:
+
+| Key | Value |
+| ------------- | ------------- |
+| Data Request ID | Fama-French Factors - Monthly Frequency |
+| Libraries/Data Sets | ff/factors_monthly  /   |
+| Frequency/Date Range | / 01Jan1990 - 29Jan2016 |
+| Search Variable |  |
+| Input Codes all item(s) |  |
+| Conditional Statements | n/a |
+| Output format/Compression | csv / gz |
+| Variables Selected | SMB HML MKTRF RF UMD |
+| Extra Variables and Parameters Selected | |
 
 
 
@@ -1000,3 +1034,23 @@ Variable Reference
 | --- | --- |
 | TCUSIP | Treasury CUSIP |
 | TDRETNUA | Daily Unadjusted Return |
+
+## Carhart factors
+### Fama-French Factors - Monthly Frequency
+| Key | Value |
+| --- | --- |
+| Library: | crspa |
+| File: | factors_monthly |
+| Data Range: | 07/01/1926 - 01/29/2016   |
+| Last Updated On: | 03/14/2016 |
+| Update Schedule: | Quarterly |
+
+Variable Reference
+
+| Variable Name | Variable Description |
+| --- | --- |
+| hml | High Minus Low (HML) |
+| mktrf | Excess Return on the Market (MKTRF) |
+| rf | 	Risk-Free Interest Rate (One Month Treasury Bill Rate) (RF) |
+| smb | Small Minus Big (SMB) |
+| umd | Momentum (UMD) |

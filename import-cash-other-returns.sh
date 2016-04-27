@@ -21,3 +21,4 @@ export PATH=$PATH:"$zipDir"
 # Call SQL
 "$psql" -U $username -d $database -f  "./sql/import-cash.sql"
 "$psql" -U $username -d $database -f  "./sql/import-global-index.sql"
+"$psql" -U $username -d $database -f  "./sql/import-factors.sql"
