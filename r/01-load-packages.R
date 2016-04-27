@@ -8,6 +8,7 @@ if (!require("xts")) install.packages("xts")
 if (!require("ggfortify")) install.packages("ggfortify")
 if (!require("lubridate")) install.packages("lubridate")
 if (!require("data.table")) install.packages("data.table")
+if (!require("R.cache")) install.packages("R.cache")
 
 # If the above command does not work, then install from another repo:
 # install.packages('ff', repo='http://nbcgib.uesc.br/mirrors/cran/')
@@ -21,5 +22,6 @@ library(xts)
 library(ggfortify)
 library(lubridate)
 library(data.table)
+library(R.cache)
 
 

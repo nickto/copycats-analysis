@@ -78,7 +78,7 @@ getCopycatPerformanceByYear <- function() {
 
 }
 
-getDecileData <- function(size) {
+extractDecileData <- function(size) {
     sql_command <- paste0("
     with
       performance_previous_month_count as (
@@ -139,6 +139,7 @@ getDecileData <- function(size) {
       last_12_months_values_w_incomplete as (
           select
             wfcin,
+            caldt,
             year,
             month,
             --count(month) over (partition by wfcin order by year, month rows between 12 preceding and 1 preceding) as months_before,
@@ -170,6 +171,7 @@ getDecileData <- function(size) {
         monthly_deciles as (
           SELECT
             wfcin,
+            caldt,
             year,
             month,
             ntile(10) over (partition by month, year order by last_12m_net_ret_act asc) as primitive_return_decile,
@@ -193,6 +195,7 @@ getDecileData <- function(size) {
         quarterly_decile as (
           select
             wfcin,
+            caldt,
             year,
             month,
             lag(primitive_return_decile, (month - 1) % 3) over (partition by wfcin order by year asc, month asc) as primitive_return_decile,
@@ -214,6 +217,10 @@ getDecileData <- function(size) {
           from monthly_deciles
         )
         select
+            wfcin,
+            caldt,
+            year,
+            month,
             primitive_return_decile,
             net_return_decile,
             exp_ratio_decile,
@@ -229,13 +236,49 @@ getDecileData <- function(size) {
             gross_sr_act,
             net_sr_act,
             net_sr_cop,
-            net_sr_diff
-        from quarterly_decile
+            net_sr_diff,
+            f.mktrf,
+            f.smb,
+            f.hml,
+            f.rf,
+            f.umd
+        from quarterly_decile as d
+        left join factors.monthly as f on
+          date_part('year', d.caldt) = date_part('year', f.dateff) AND
+          date_part('month', d.caldt) = date_part('month', f.dateff)
+
     ")
 
     decileData <- as.data.table(dbGetQuery(con, sql_command))
 
     return(decileData)
+}
+
+getDecileData <- function(size) {
+    # 1. Try to load cached data, if already extracted
+    key <- list(size)
+    data <- loadCache(key)
+
+    if (!is.null(data)) {
+        cat("Loaded cached decile data\n")
+        return(data);
+    }
+
+    # 2. If not available, extract it.
+    cat("Extracting decile data from DB...")
+    data <- extractDecileData(size)
+    cat("ok\n")
+    saveCache(data, key=key, comment="getDecileData()")
+    return(data)
+}
+
+clearDecileCache <- function() {
+    for(size in c(10, 50, 250)) {
+        tryCatch( file.remove(findCache(key=list(size))) ,
+                  error = function(e) {})
+    }
+
+    print("Cached decile data removed")
 }
 
 getDecileAnalyis <- function(size, decileName) {
