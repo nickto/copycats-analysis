@@ -369,7 +369,7 @@ getDecileAnalyis <- function() {
                 dataD1MinusD10 <- data[[1]]
                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
 
-                tTest <- t.test(data[[decile]][, monthMean])
+                tTest <- t.test(dataD1MinusD10[, monthMean])
 
                 means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
                 means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
