@@ -19,6 +19,8 @@ getCopycatPerformanceWholeSample <- function() {
       net_ret_250m_cop - gross_ret_act as net_diff_250m
     from performance.monthly
     where wfcin is not null
+    -- legacy. should be removed later!
+    and m_exp >= 0
     ")
     wholeSampleDiffs <- as.data.table(dbGetQuery(con, sql_command))
 
@@ -59,6 +61,8 @@ getCopycatPerformanceByYear <- function() {
       avg(net_ret_250m_cop) - avg(net_ret_act) as net_diff_250m
     from performance.monthly
     where wfcin is not null
+    -- legacy. should be removed later!
+    and m_exp >= 0
     group by year
     order by year
     ")
@@ -91,8 +95,8 @@ extractDecileData <- function(size) {
           date_part('year', p.caldt) = date_part('year', f.dateff) AND
           date_part('month', p.caldt) = date_part('month', f.dateff)
         where wfcin is not null
-          -- this should be removed! it is the legacy of the version where we had this problem
-          AND m_exp > -8.25
+        -- legacy. should be removed later!
+        and m_exp >= 0
       ),
       performance_w_excess_returns as (
         select
@@ -281,11 +285,11 @@ clearDecileCache <- function() {
     print("Cached decile data removed")
 }
 
-getDecileAnalyis <- function(size, decileName) {
+getDecileAnalyisWrong <- function(size, decileName) {
     # This function returns a list with the following elements: estimate,
     # statistics and p.value. Each element is a data table with deciles in the
-    # rows and performance measure in the columns. Decile 0 means is a whole
-    # sample result (deicle 1--10).
+    # rows and performance measure in the columns. Decile 11 means decile 1
+    # minus decile 10.
     #
     # - size is either 10, 50 or 250
     # - decileName is eitehr primitive_return_decile, net_return_decile,
@@ -332,7 +336,7 @@ getDecileAnalyis <- function(size, decileName) {
 
         # now the same for all deciles
         decileStatistics[[parameter]][[2]] <- decileData[!is.na(get(decileName)), list(
-            0,
+            11,
             t.test(gross_ret_act, alternative = "two.sided")[[parameter]],
             t.test(net_ret_act, alternative = "two.sided")[[parameter]],
             t.test(gross_ret_cop, alternative = "two.sided")[[parameter]],
@@ -359,7 +363,7 @@ getDecileAnalyis <- function(size, decileName) {
     return(decileStatistics)
 }
 
-getCompleteDecileAnalyis <- function() {
+getCompleteDecileAnalyisWrong <- function() {
 # This function returns as list of lists of lists, where
 # - the first element is either means the size of the fund:
 #   10, 50 or 250
@@ -386,4 +390,160 @@ getCompleteDecileAnalyis <- function() {
         }
     }
     return(decileAnalysis)
+}
+
+getDecileAnalyis <- function() {
+
+    decileNames <- c("primitive_return_decile",
+                     "net_return_decile",
+                     "exp_ratio_decile",
+                     "sr_decile")
+    dependentVariables <- c("gross_ret_act",
+                            "net_ret_act",
+                            "gross_ret_cop",
+                            "atc_ret_cop",
+                            "net_ret_cop",
+                            "gross_diff",
+                            "atc_ret_diff",
+                            "net_ret_diff",
+                            "gross_sr_act",
+                            "net_sr_act",
+                            "net_sr_cop",
+                            "net_sr_diff")
+
+    means <- list()
+    for(size in c(10,50,250)) {
+        #size <- 50
+        decileData <- getDecileData(size)
+
+        means[[as.character(size)]] <- list()
+        for(decileName in decileNames) {
+            # decileName <- "net_return_decile"
+
+            means[[as.character(size)]][[decileName]] <- list()
+
+            means[[as.character(size)]][[decileName]][["mean"]]  <- data.table(decile = 1:11)
+            means[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+            means[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+
+
+            for(dependentVariable in dependentVariables) {
+                # dependentVariable <- "net_ret_diff"
+
+                # means for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(dependentVariable), na.rm =TRUE)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+
+                    tTest <- t.test(data[[decile]][, monthMean])
+
+                    means[[as.character(size)]][[decileName]][["mean"]][decile, (dependentVariable) := tTest$estimate]
+                    means[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := tTest$statistic]
+                    means[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := tTest$p.value]
+                }
+
+                # means fore decile 1 minus decile 10
+                dataD1MinusD10 <- data[[1]]
+                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+
+                tTest <- t.test(data[[decile]][, monthMean])
+
+                means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
+                means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
+                means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
+            }
+        }
+    }
+
+    return(means)
+
+}
+
+
+
+getAlphas <- function() {
+
+    decileNames <- c("primitive_return_decile",
+                     "net_return_decile",
+                     "exp_ratio_decile",
+                     "sr_decile")
+    dependentVariables <- c("gross_ret_act",
+                            "net_ret_act",
+                            "gross_ret_cop",
+                            "atc_ret_cop",
+                            "net_ret_cop",
+                            "gross_diff",
+                            "atc_ret_diff",
+                            "net_ret_diff",
+                            "gross_sr_act",
+                            "net_sr_act",
+                            "net_sr_cop",
+                            "net_sr_diff")
+
+    alphas <- list()
+    for(size in c(10,50,250)) {
+        #size <- 50
+        decileData <- getDecileData(size)
+
+        alphas[[as.character(size)]] <- list()
+        for(decileName in decileNames) {
+            # decileName <- "net_return_decile"
+
+            alphas[[as.character(size)]][[decileName]] <- list()
+
+            alphas[[as.character(size)]][[decileName]][["alpha"]]  <- data.table(decile = 1:11)
+            alphas[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+            alphas[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+
+
+            for(dependentVariable in dependentVariables) {
+                # dependentVariable <- "net_ret_diff"
+
+                # alphas for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(dependentVariable), na.rm =TRUE),
+                            mktrf = mean(mktrf),
+                            smb = mean(smb),
+                            hml = mean(hml),
+                            rf = mean(rf),
+                            umd = mean(umd)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+
+                    fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
+                    se <- coeftest(fm, NeweyWest(fm, lag=2))
+
+                    alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
+                    alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
+                    alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := se[1,4]]
+                }
+
+                # alphas fore decile 1 minus decile 10
+                dataD1MinusD10 <- data[[1]]
+                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+
+                fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
+                se <- coeftest(fm, NeweyWest(fm, lag=2))
+
+                alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
+                alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
+                alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
+
+            }
+        }
+    }
+
+    return(alphas)
+
 }
