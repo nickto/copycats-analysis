@@ -11,15 +11,22 @@ pw <- {
 
 # connect to Postgre
 drv <- dbDriver("PostgreSQL")
-tryCatch(dbDisconnect(con))
-
+if(exists("con")) {
+    dbDisconnect(con)
+    rm(con)
+}
 con <- dbConnect(drv, dbname = "copycats",
                  host = "localhost", port = 5432,
                  user = "copycat", password = pw)
+
+
+
+
 
 # # template
 # sql_command <- "
 # "
 # dbGetQuery(con, sql_command)
 
+#dbDisconnect(con); rm(list = ls())
 

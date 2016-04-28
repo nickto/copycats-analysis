@@ -1,4 +1,7 @@
 getCopycatPerformanceWholeSample <- function() {
+# This function returns a data table that compares means of primitive funds and
+# copycats. It also contains t-statistics and p-values.
+
     sql_command <- paste0("
     select
       --net_ret_act as primitive_gross,
@@ -40,6 +43,10 @@ getCopycatPerformanceWholeSample <- function() {
 }
 
 getCopycatPerformanceByYear <- function() {
+# This function returns a data table that compares means of primitive funds and
+# copycats by year. Unlike getCopycatPerformanceWholeSample it does not return
+# t-statistics and p-values.
+
     sql_command <- paste0("
     select
       year,
@@ -83,6 +90,9 @@ getCopycatPerformanceByYear <- function() {
 }
 
 extractDecileData <- function(size) {
+# This function extracts decile data from the database. It retursn a data table
+# object.
+
     sql_command <- paste0("
     with
       performance_previous_month_count as (
@@ -259,6 +269,10 @@ extractDecileData <- function(size) {
 }
 
 getDecileData <- function(size) {
+# This functio returns a data table with decile data. It uses cached data if
+# available. Cache is not cleaned between sessions, therefore one might
+# consider using clearDecileCache function from time to time.
+
     # 1. Try to load cached data, if already extracted
     key <- list(size)
     data <- loadCache(key)
@@ -277,6 +291,8 @@ getDecileData <- function(size) {
 }
 
 clearDecileCache <- function() {
+# This function clear cache of getDecileData() function.
+
     for(size in c(10, 50, 250)) {
         tryCatch( file.remove(findCache(key=list(size))) ,
                   error = function(e) {})
@@ -285,114 +301,15 @@ clearDecileCache <- function() {
     print("Cached decile data removed")
 }
 
-getDecileAnalyisWrong <- function(size, decileName) {
-    # This function returns a list with the following elements: estimate,
-    # statistics and p.value. Each element is a data table with deciles in the
-    # rows and performance measure in the columns. Decile 11 means decile 1
-    # minus decile 10.
-    #
-    # - size is either 10, 50 or 250
-    # - decileName is eitehr primitive_return_decile, net_return_decile,
-    #   exp_ratio_decile, or sr_decile
-
-    #decileName <- "primitive_return_decile"
-    #size <- 250
-
-    # get data from the SQL database
-    decileData <- getDecileData(size)
-
-    # set new column names
-    newNames <- c("gross_ret_act",
-                  "net_ret_act",
-                  "gross_ret_cop",
-                  "atc_ret_cop",
-                  "net_ret_cop",
-                  "net_sr_act",
-                  "net_sr_cop",
-                  "gross_diff",
-                  "atc_ret_diff",
-                  "net_ret_diff",
-                  "net_sr_diff")
-
-    decileStatistics <- list()
-    for(parameter in c("estimate", "statistic", "p.value")) {
-        decileStatistics[[parameter]] <- list()
-        decileStatistics[[parameter]][[1]] <- decileData[!is.na(get(decileName)), list(
-            t.test(gross_ret_act, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_act, alternative = "two.sided")[[parameter]],
-            t.test(gross_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(atc_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_act, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_cop, alternative = "two.sided")[[parameter]],
-            t.test(gross_diff, alternative = "two.sided")[[parameter]],
-            t.test(atc_ret_diff, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_diff, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_diff, alternative = "two.sided")[[parameter]]),
-            by = decileName]
-        setnames(decileStatistics[[parameter]][[1]],
-                 c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11"),
-                 newNames)
-
-        # now the same for all deciles
-        decileStatistics[[parameter]][[2]] <- decileData[!is.na(get(decileName)), list(
-            11,
-            t.test(gross_ret_act, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_act, alternative = "two.sided")[[parameter]],
-            t.test(gross_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(atc_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_cop, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_act, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_cop, alternative = "two.sided")[[parameter]],
-            t.test(gross_diff, alternative = "two.sided")[[parameter]],
-            t.test(atc_ret_diff, alternative = "two.sided")[[parameter]],
-            t.test(net_ret_diff, alternative = "two.sided")[[parameter]],
-            t.test(net_sr_diff, alternative = "two.sided")[[parameter]])]
-        setnames(decileStatistics[[parameter]][[2]],
-                 c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8", "V9", "V10", "V11", "V12"),
-                 names(decileStatistics[[parameter]][[1]]))
-
-
-        # bind deciles and wholesample analysis together
-        decileStatistics[[parameter]] <- rbindlist(decileStatistics[[parameter]])
-        # sort on decile
-        setkeyv(decileStatistics[[parameter]], decileName)
-    }
-
-
-    return(decileStatistics)
-}
-
-getCompleteDecileAnalyisWrong <- function() {
-# This function returns as list of lists of lists, where
-# - the first element is either means the size of the fund:
-#   10, 50 or 250
-# - the second is decile name by which the sorting is performed
-#   primitive_return_decile, net_return_decile, exp_ratio_decile or sr_decile
-# - the thirs element is type of statistics
-#   mean, tStat or pValue
-#
-# To access t-statistics for a 50M size fund of deciles by net return difference
-# (assuming the you save the result of the function into variable result) you
-# should write decileAnalysis$`50`$net_return_decile$tStat.
-# (If you do it in command line, then wait after writing $, and RStudio will show
-# you the options).
-#
-    decileAnalysis <- list()
-    for(size in c(10,50,250)) {
-        decileAnalysis[[as.character(size)]] <- list()
-        for(decileName in c("primitive_return_decile",
-                            "net_return_decile",
-                            "exp_ratio_decile",
-                            "sr_decile")) {
-            decileAnalysis[[as.character(size)]][[decileName]] <-
-                getDecileAnalyis(size, decileName)
-        }
-    }
-    return(decileAnalysis)
-}
-
 getDecileAnalyis <- function() {
+# This function return mean comparisons (with t-statistic and p-values) for
+# different decile sorting and different fund sizes. Note that decile 11
+# means decile 1 minus decile 10.
+#
+# The returned object is a list of lists... where the first level indicates
+# the fund size, the second level indicates which variable the deciles where
+# sorted, the third level contains difference statistics (means, t-stat etc),
+# each of this statistics is represented using a data table.
 
     decileNames <- c("primitive_return_decile",
                      "net_return_decile",
@@ -465,9 +382,15 @@ getDecileAnalyis <- function() {
 
 }
 
-
-
 getAlphas <- function() {
+# This function return carhart alphas (with t-statistic and p-values) for
+# different decile sorting and different fund sizes. Note that decile 11
+# means decile 1 minus decile 10.
+#
+# The returned object is a list of lists of lists, where the first level indicates
+# the fund size, the second level indicates which variable the deciles where
+# sorted, the third level contains difference statistics (alphas, t-stat etc),
+# each of this statistics is represented using a data table.
 
     decileNames <- c("primitive_return_decile",
                      "net_return_decile",

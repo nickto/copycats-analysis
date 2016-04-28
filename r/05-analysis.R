@@ -13,14 +13,11 @@ performanceComparisonByYear <- getCopycatPerformanceByYear()
 
 
 # Decile analysis
-decileAnalysis <- getCompleteDecileAnalyis()
-
-d <- getCompleteDecileAnalyis()
-dTmp <- getDecileAnalyisTmp()
+decileMeans <- getDecileAnalyis()
 
 
 # Carhart regressions
-alphas <- getAlphas()
+decileAlphas <- getAlphas()
 
 
 
