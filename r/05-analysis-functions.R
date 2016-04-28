@@ -1,3 +1,7 @@
+inc <- function(x, n = 1){
+ eval.parent(substitute(x <- x + n))
+}
+
 getCopycatPerformanceWholeSample <- function() {
 # This function returns a data table that compares means of primitive funds and
 # copycats. It also contains t-statistics and p-values.
@@ -88,6 +92,7 @@ getCopycatPerformanceByYear <- function() {
     return(byYear)
 
 }
+
 
 extractDecileData <- function(size) {
 # This function extracts decile data from the database. It retursn a data table
@@ -274,7 +279,7 @@ getDecileData <- function(size) {
 # consider using clearDecileCache function from time to time.
 
     # 1. Try to load cached data, if already extracted
-    key <- list(size)
+    key <- list("deciles", size)
     data <- loadCache(key)
 
     if (!is.null(data)) {
@@ -286,7 +291,7 @@ getDecileData <- function(size) {
     cat("Extracting decile data from DB...")
     data <- extractDecileData(size)
     cat("ok\n")
-    saveCache(data, key=key, comment="getDecileData()")
+    saveCache(data, key = key, comment="getDecileData()")
     return(data)
 }
 
@@ -294,7 +299,7 @@ clearDecileCache <- function() {
 # This function clear cache of getDecileData() function.
 
     for(size in c(10, 50, 250)) {
-        tryCatch( file.remove(findCache(key=list(size))) ,
+        tryCatch( file.remove(findCache(key=list("deciles", size))) ,
                   error = function(e) {})
     }
 
@@ -445,7 +450,7 @@ getAlphas <- function() {
                     setkey(data[[decile]], year, month)
 
                     fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
-                    se <- coeftest(fm, NeweyWest(fm, lag=2))
+                    se <- coeftest(fm, NeweyWest(fm, lag = 2))
 
                     alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
                     alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
@@ -457,7 +462,7 @@ getAlphas <- function() {
                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
 
                 fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
-                se <- coeftest(fm, NeweyWest(fm, lag=2))
+                se <- coeftest(fm, NeweyWest(fm, lag = 2))
 
                 alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
                 alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
@@ -469,4 +474,113 @@ getAlphas <- function() {
 
     return(alphas)
 
+}
+
+
+extractFundAndFactorsData <- function(size) {
+    sql_command <- paste0("
+        select
+          p.wfcin,
+          p.year,
+          p.month,
+          p.gross_ret_cop,
+          p.atc_ret_", size, "m_cop as atc_ret_cop,
+          p.net_ret_", size, "m_cop as net_ret_cop,
+          p.net_ret_act,
+          p.gross_ret_act,
+          p.m_exp,
+          f.rf,
+          f.mktrf,
+          f.smb,
+          f.hml,
+          f.umd
+        from performance.monthly as p
+        left join factors.monthly as f on
+          date_part('year', p.caldt) = date_part('year', f.dateff) AND
+          date_part('month', p.caldt) = date_part('month', f.dateff)
+        where wfcin is not null
+        -- bodge
+        and m_exp >= 0
+    ")
+    return(as.data.table(dbGetQuery(con, sql_command)))
+}
+
+getFundAndFactorsData <- function(size) {
+    # 1. Try to load cached data, if already extracted
+    key <- list("factors", size)
+    data <- loadCache(key)
+
+    if (!is.null(data)) {
+        cat("Loaded cached factors data\n")
+        return(data);
+    }
+
+    # 2. If not available, extract it.
+    cat("Extracting factors data from DB...")
+    data <- extractDecileData(size)
+    cat("ok\n")
+    saveCache(data, key = key, comment="getDecileData()")
+    return(data)
+}
+
+clearFundAndFactorsCache <- function() {
+# This function clear cache of getDecileData() function.
+
+    for(size in c(10, 50, 250)) {
+        tryCatch( file.remove(findCache(key=list("factors", size))) ,
+                  error = function(e) {})
+    }
+
+    print("Cached decile data removed")
+}
+
+getMonthlyAlphaDeciles <- function(size) {
+# This function returns monthly deciles base on Carharts alpha. (The problem is
+# that rebalancing should be done only quarterly).
+
+    data <- getFundAndFactorsData(size)
+    setkey(data, wfcin, year, month)
+
+    wfcinList <- unique(data[,wfcin])
+
+    alphasList <- list(); iAlpha <- 0
+
+    for(curWfcin in wfcinList) {
+        wfcinData <- data[wfcin == curWfcin]
+        setkey(wfcinData, year, month)
+
+        if(nrow(wfcinData) > 13) {
+            for(i in 13:nrow(wfcinData)) {
+                curData <- wfcinData[(i-12):(i-1)]
+                curYear <- wfcinData[i,year]
+                curMonth <- wfcinData[i,month]
+
+                tryCatch({
+                    fm <- lm(net_ret_act ~ rf + mktrf + smb + hml + umd,
+                         data = curData)
+                    se <- coeftest(fm, NeweyWest(fm))
+
+                    alphasList[[inc(iAlpha)]] <- data.table(
+                        wfcin = curWfcin,
+                        year = curYear,
+                        month = curMonth,
+                        alpha = se[1,1])
+                },
+                error = function(e) {
+                    alphasList[[inc(iAlpha)]] <- data.table(
+                        wfcin = curWfcin,
+                        year = curYear,
+                        month = curMonth,
+                        alpha = NA)
+                })
+            }
+        }
+        print(paste(iAlpha, curWfcin))
+    }
+
+
+    alphas <- rbindlist(alphasList)
+    alphas[, alphas_decile := ntile(alpha, 10), by = list(year, month)]
+
+    return(alphas)
 }
