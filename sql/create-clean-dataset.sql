@@ -384,6 +384,9 @@ CREATE TABLE IF NOT EXISTS clean.crsp_fs_wfcin as (
     clean.crsp_wfcin as w ON
     w.crsp_fundno = s.crsp_fundno    
 );
+
+UPDATE clean.crsp_fs_wfcin SET exp_ratio = NULL WHERE exp_ratio = -99; 
+
 CREATE INDEX IF NOT EXISTS
   crsp_fs_wfcin_wfcin_idx
 ON
