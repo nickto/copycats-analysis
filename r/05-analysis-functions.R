@@ -1,5 +1,5 @@
 inc <- function(x, n = 1){
- eval.parent(substitute(x <- x + n))
+  eval.parent(substitute(x <- x + n))
 }
 
 getCopycatPerformanceWholeSample <- function() {

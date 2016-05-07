@@ -5,104 +5,114 @@ s <- Sys.time()
 write(paste("\nStarted at:", s), file = "log.txt",
           append = TRUE, sep = " ")
 
+#-------------------------------------------------------------------------------
+# things common for all funds
+
+# get database query results
 # get list of of unique fund identifiers (wfcin)
 wfcinList <- getWfcinList()
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
+# get list of stock dates
+stockDatesAll <-getStockDates()
+# get daily cash returns
+cashReturn <- getCashReturn()
+# get daily other returns
+otherReturn <- getOtherReturn()
+# get average monthly expense ratio
+averageExpenseRatio <- getAverageExpenseRatio()
 
+
+# set up database for saving results
 # create schema for temporay tables (there is at least one in the code)
 sql_command <- paste0("create schema if not exists tmp")
 dbSendQuery(con, sql_command)
 # create schema for resulting tables
 sql_command <- paste0("create schema if not exists performance")
 dbSendQuery(con, sql_command)
+#-------------------------------------------------------------------------------
 
 # Loop through all funds
 set.seed(1200)
-for (wfcin in (sample_n(as.data.frame(wfcinList), 1))[,1]) {
+fundNo <- 0
+for (wfcin in (sample_n(as.data.frame(wfcinList), 3))[,1]) {
+    # wfcin <- 106067
+    logMessage <- paste(
+            paste0(inc(fundNo), ":"),
+            wfcin,
+            sep = "\t"
+        )
+
+
+
     # add timing information
     t <- system.time({
 
-    # run whole code through tryCatsh to avoid stopping the program due to errors
+    # run whole code through tryCatch to avoid stopping the program due to errors
     # in a fund
     errorInCalculations <- FALSE
     errorInWriteToDb <- FALSE
     tryCatch(suppressWarnings({
-        # get start and end dates of fund for analysis
-        startEndDates <- getStartEndDates(wfcin)
+
+
+
+        # get holdings of this fund
+        holdings <- getHoldings(wfcin, stockDatesAll, startEndDates)
+
+        # get start and end dates for analysis
+        startEndDates <- getStartEndDates(holdings)
         # check whether there is a period to analyze
-        if(startEndDates[1,start_date] > startEndDates[1,end_date]) {
+        if(startEndDates[1,start] >= startEndDates[1,end]) {
             # start date is greater than end date: skip this fund
+            logMessage <- paste(
+                    logMessage,
+                    "skip",
+                    "skip",
+                    "-",
+                    sep = "\t"
+                )
+            if(fundNo == 1) {
+                addLogEntry(logMessage, "log.txt", TRUE)
+            } else {
+                addLogEntry(logMessage, "log.txt")
+            }
+
             next()
         }
 
+        # subset holdings
+        holdings <- subsetHoldings(holdings, startEndDates)
+
+        # get stock information
+        stocks <- getStockData(holdings, startEndDates)
 
         # get periods with key dates
-        # The returned table has the following columns:
-        # - wfcin: unique fund identifier
-        # - period_no:             number of period
-        # - new_holdings:          flag whether there should be a rebalancing
-        # - returns_from_date:     date (including) from which to calculate returns
-        # - returns_to_date:       date (including) till which to calculate returns
-        # - stock_data_date:       date at which to look share-level information of
-        #                          holdings (used to calculate initial weights)
-        # - holdings_fdate:        fdate of current holdings (used for linking)
-        # - holdings_returns_from: date from which current holdings started to
-        #                          accumulate returns (used for calculating current
-        #                          weights)
-        periodKeyDates <- getPeriodDates(wfcin, startEndDates)
+        periods <- getPeriodDates(startEndDates, stockDatesAll, holdings)
 
-        # get holdings data, weights as of the first date of holdings information
-        holdingsData <- getHoldingsData(wfcin, periodKeyDates)
+        # get returns at the stock level
+        setkey(stocks, cusip, date)
+        stockLevelReturnsList <- getStockLevelGrossReturns(periods, holdings, stocks)
 
-        # get all stock data
-        stockData <- getAllStockData(holdingsData, startEndDates)
+        # get changes in weights at the stock level
+        stockLevelChangesList <- getStockLevelChanges(periods, stockLevelReturnsList)
 
+        # get proprtion of asset classes for each period
+        periodProportions <- getPeriodProportions(wfcin, periods, averageCash)
 
-        # add cusips to period key dates and extract each period return
-        # also add buy and sell price:
-        # - buy price is the price on the day before the beginning of the period
-        #   (the day on which the stock is actually bought)
-        # - sell price is the price on the last day of the period
-        periodStockData <- getPeriodStockData(periodKeyDates, holdingsData, stockData)
+        # get stock level trading costs
+        stockLevelTradingCosts <- getStockLevelTradingCosts(periodProportions, stockLevelChangesList, stocks)
 
+        # get gross returns and cost terms for each period
+        periodReturnsAndCosts <- getPeriodReturnsAndCosts(stockLevelReturnsList, stockLevelTradingCosts)
 
-        # get gross returns of stocks in the portfolio for the period
-        periodStockReturns <- getPeriodStockReturns(periodStockData, periodKeyDates)
-        periodCashReturns <- getPeriodCashReturns(periodKeyDates)
-        periodOtherReturns <- getPeriodOtherReturns(periodKeyDates)
+        # get period returns of all asset classes
+        periodReturns <- getPeriodReturns(periodReturnsAndCosts, periods, cashReturn, otherReturn)
 
-        periodReturns <- mergeReturns(periodStockReturns, periodCashReturns, periodOtherReturns)
+        # get monthly returns of copycat
+        monthlyCopycatReturns <- getMonthlyCopycatReturns(periodReturns)
 
-        # get weights and returns of each class
-        returnsWeightsOfClasses <- getCategoriesData(periodKeyDates, periodReturns, averageCash)
-
-
-        # add stock trading costs
-        costComponents <- getTradingCosts(periodKeyDates, returnsWeightsOfClasses,
-                                          stockData)
-        setkey(costComponents, period_no)
-
-        # get fund returns
-        periodReturns <- getPeriodReturns(returnsWeightsOfClasses, costComponents,
-                                          periodKeyDates)
-
-        # get monthly returns
-        monthlyReturns <- getMonthlyReturns(periodReturns)
-
-        # get actual monthly returns of a fund
-        actualReturns <- getActualReturns(wfcin, startEndDates)
-
-        # merge copied and actual returns
-        monthlyReturns <- merge(
-            monthlyReturns,
-            actualReturns,
-            by = c("year", "month"),
-            all = TRUE
-        )
-
-        # add wfcin for identification purposes
-        monthlyReturns[, wfcin := wfcin]
+        # add data on actual returns
+        monthlyReturns <- getActualReturns(monthlyCopycatReturns, wficn, averageExpenseRatio)
 
 
     }), error=function(cond) {
@@ -137,11 +147,39 @@ for (wfcin in (sample_n(as.data.frame(wfcinList), 1))[,1]) {
     }) # this bracket ends system.time() function
 
 
-    # add information to log
-    messageToLog <- addLogEntry(wfcin, t, errorInCalculations, errorInWriteToDb)
+    #  add information to log
+    if(errorInCalculations) {
+        logMessage <- paste(logMessage,
+                            "ERROR",
+                            "skip",
+                            sep = "\t")
+    } else {
+        logMessage <- paste(logMessage,
+                            "OK",
+                            sep = "\t")
+        if(!errorInWriteToDb) {
+            logMessage <- paste(logMessage,
+                                "OK",
+                                sep = "\t")
+        } else {
+            logMessage <- paste(logMessage,
+                                "ERROR",
+                                sep = "\t")
+        }
+    }
+    # add time information to log
+    logMessage <- paste(logMessage,
+                        round(t["elapsed"], 2),
+                        sep = "\t")
+
+    if(fundNo == 1) {
+        addLogEntry(logMessage, "log.txt", TRUE)
+    } else {
+        addLogEntry(logMessage, "log.txt")
+    }
 
     # print message
-    print(messageToLog)
+    cat(paste(logMessage, "\n"))
 
 
 
