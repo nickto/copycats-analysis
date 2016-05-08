@@ -217,10 +217,10 @@ extractDecileData <- function(size) {
             caldt,
             year,
             month,
-            lag(primitive_return_decile, (month - 1) % 3) over (partition by wfcin order by year asc, month asc) as primitive_return_decile,
-            lag(net_return_decile, (month - 1) % 3) over (partition by wfcin order by year asc, month asc) as net_return_decile,
-            lag(exp_ratio_decile, (month - 1) % 3) over (partition by wfcin order by year asc, month asc) as exp_ratio_decile,
-            lag(sr_decile, (month - 1) % 3) over (partition by wfcin order by year asc, month asc) as sr_decile,
+            lag(primitive_return_decile, (cast(month as int) - 1) % 3) over (partition by wfcin order by year asc, month asc) as primitive_return_decile,
+            lag(net_return_decile, (cast(month as int) - 1) % 3) over (partition by wfcin order by year asc, month asc) as net_return_decile,
+            lag(exp_ratio_decile, (cast(month as int) - 1) % 3) over (partition by wfcin order by year asc, month asc) as exp_ratio_decile,
+            lag(sr_decile, (cast(month as int) - 1) % 3) over (partition by wfcin order by year asc, month asc) as sr_decile,
             gross_ret_act,
             net_ret_act,
             gross_ret_cop,
@@ -534,6 +534,7 @@ clearFundAndFactorsCache <- function() {
     print("Cached decile data removed")
 }
 
+
 getMonthlyAlphaDeciles <- function(size) {
 # This function returns monthly deciles base on Carharts alpha. (The problem is
 # that rebalancing should be done only quarterly).
@@ -543,7 +544,7 @@ getMonthlyAlphaDeciles <- function(size) {
 
     wfcinList <- unique(data[,wfcin])
 
-    alphasList <- list(); iAlpha <- 0
+    alphasList <- list(); iAlpha <- 0; iWfcin <- 0
 
     for(curWfcin in wfcinList) {
         wfcinData <- data[wfcin == curWfcin]
@@ -556,7 +557,7 @@ getMonthlyAlphaDeciles <- function(size) {
                 curMonth <- wfcinData[i,month]
 
                 tryCatch({
-                    fm <- lm(net_ret_act ~ rf + mktrf + smb + hml + umd,
+                    fm <- lm(gross_ret_act ~ rf + mktrf + smb + hml + umd,
                          data = curData)
                     se <- coeftest(fm, NeweyWest(fm))
 
@@ -575,7 +576,7 @@ getMonthlyAlphaDeciles <- function(size) {
                 })
             }
         }
-        print(paste(iAlpha, curWfcin))
+        cat(paste(inc(iWfcin), curWfcin, "\n", sep = "\t"))
     }
 
 
@@ -583,4 +584,297 @@ getMonthlyAlphaDeciles <- function(size) {
     alphas[, alphas_decile := ntile(alpha, 10), by = list(year, month)]
 
     return(alphas)
+}
+
+getQuarterlyDeciles <- function(monthlyDeciles) {
+    # This functions accepts monthly deciles as inputs, but rebalances only
+    # once in a quarter: 1, 4, 7, 10
+
+    # sort
+    setkey(monthlyDeciles, wfcin, year, month)
+
+    # loop through all
+    for(i in 1:nrow(monthlyDeciles)) {
+        month <- monthlyDeciles[i, month]
+
+        # months 1, 4, 7, 10: current month values
+        if(month %in% c(1, 4, 7, 10)) {
+            # no need to change deciles in these months
+            next
+        }
+
+        # months 2, 5, 8, 11: previous month values
+        if(month %in% c(2, 5, 8, 11)) {
+            # use values from previous month
+            if(i > 2 && monthlyDeciles[i - 1, wfcin] == monthlyDeciles[i, wfcin]) {
+                # if there are previous values to use
+                monthlyDeciles[i,
+                    alphas_decile := monthlyDeciles[i - 1, alphas_decile]
+                ]
+            } else {
+                # there are no previous values to use
+                monthlyDeciles[i,
+                    alphas_decile := NA
+                ]
+            }
+            next
+        }
+
+        # months 3, 6, 9, 12: previous (-2) month values
+        if(month %in% c(3, 6, 9, 12)) {
+            # use values from previous month
+            if(i > 3 && monthlyDeciles[i - 2, wfcin] == monthlyDeciles[i, wfcin]) {
+                # if there are previous values to use
+                monthlyDeciles[i,
+                    alphas_decile := monthlyDeciles[i - 2, alphas_decile]
+                ]
+            } else {
+                # there are no previous values to use
+                monthlyDeciles[i,
+                    alphas_decile := NA
+                ]
+            }
+            next
+        }
+    }
+
+    # remove rows where there if no information from previous decile assugnment
+    # month
+    monthlyDeciles <- filter(monthlyDeciles, !is.na(alphas_decile))
+
+    return(monthlyDeciles)
+
+}
+
+computeAlphaDeciles <- function(size) {
+    # This function computes deciles based on Carhart alpha of the primitive
+    # fund with quarterly changes in deciles.
+
+    monthly <- getMonthlyAlphaDeciles(size)
+    quarterly <- getQuarterlyDeciles(monthly)
+
+    return(quarterly)
+}
+
+getAlphaDeciles <- function(size) {
+    # This function returns deciles based on Carhart alpha, but it returns
+    # it from cache if it already there.
+
+    # size is hardcoded to 10, because alphas and therefore deciles are
+    # the same regardless of the copycat fund size (because we compute them
+    # based on primitive fund size), but we store data that is used to calculate
+    # deciles by copycat fund size.
+
+    # 1. Try to load cached data, if already extracted
+    key <- list("alpha_deciles", 10)
+    data <- loadCache(key)
+
+    if (!is.null(data)) {
+        cat("Loaded cached decile data\n")
+        return(data);
+    }
+
+    # 2. If not available, extract it.
+    cat("Calculating...", "\n")
+    data <- computeAlphaDeciles(10)
+    cat("ok\n")
+    saveCache(data, key = key, comment="computeAlphaDeciles()")
+    return(data)
+}
+
+clearAlphaDecilesCache <- function() {
+# This function clear cache of getDecileData() function.
+
+    for(size in c(10, 50, 250)) {
+        tryCatch( file.remove(findCache(key=list("alpha_deciles", size))) ,
+                  error = function(e) {})
+    }
+
+    print("Cached alpha deciles data removed")
+}
+
+
+
+getDecileAnalyisWithAlphasDecile <- function() {
+# This function return mean comparisons (with t-statistic and p-values) for
+# different decile sorting and different fund sizes. Note that decile 11
+# means decile 1 minus decile 10.
+#
+# The returned object is a list of lists... where the first level indicates
+# the fund size, the second level indicates which variable the deciles where
+# sorted, the third level contains difference statistics (means, t-stat etc),
+# each of this statistics is represented using a data table.
+
+    decileNames <- c("primitive_return_decile",
+                     "net_return_decile",
+                     "exp_ratio_decile",
+                     "sr_decile",
+                     "alphas_decile")
+    dependentVariables <- c("gross_ret_act",
+                            "net_ret_act",
+                            "gross_ret_cop",
+                            "atc_ret_cop",
+                            "net_ret_cop",
+                            "gross_diff",
+                            "atc_ret_diff",
+                            "net_ret_diff",
+                            "gross_sr_act",
+                            "net_sr_act",
+                            "net_sr_cop",
+                            "net_sr_diff")
+
+    means <- list()
+    for(size in c(10,50,250)) {
+        #size <- 50
+        decileData <- getDecileData(size)
+        alphaDeciles <- getAlphaDeciles(size)
+
+        decileData <- merge(
+            decileData,
+            alphaDeciles[, list(wfcin, year, month, alphas_decile)],
+            by = c("wfcin", "year", "month")
+        )
+
+        means[[as.character(size)]] <- list()
+        for(decileName in decileNames) {
+            # decileName <- "net_return_decile"
+
+            means[[as.character(size)]][[decileName]] <- list()
+
+            means[[as.character(size)]][[decileName]][["mean"]]  <- data.table(decile = 1:11)
+            means[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+            means[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+
+
+            for(dependentVariable in dependentVariables) {
+                # dependentVariable <- "net_ret_diff"
+
+                # means for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(dependentVariable), na.rm =TRUE)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+
+                    tTest <- t.test(data[[decile]][, monthMean])
+
+                    means[[as.character(size)]][[decileName]][["mean"]][decile, (dependentVariable) := tTest$estimate]
+                    means[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := tTest$statistic]
+                    means[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := tTest$p.value]
+                }
+
+                # means fore decile 1 minus decile 10
+                dataD1MinusD10 <- data[[1]]
+                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+
+                tTest <- t.test(dataD1MinusD10[, monthMean])
+
+                means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
+                means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
+                means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
+            }
+        }
+    }
+
+    return(means)
+}
+
+getAlphasWithCA <- function() {
+# This function return carhart alphas (with t-statistic and p-values) for
+# different decile sorting and different fund sizes. Note that decile 11
+# means decile 1 minus decile 10.
+#
+# The returned object is a list of lists of lists, where the first level indicates
+# the fund size, the second level indicates which variable the deciles where
+# sorted, the third level contains difference statistics (alphas, t-stat etc),
+# each of this statistics is represented using a data table.
+
+    decileNames <- c("primitive_return_decile",
+                     "net_return_decile",
+                     "exp_ratio_decile",
+                     "sr_decile")
+    dependentVariables <- c("gross_ret_act",
+                            "net_ret_act",
+                            "gross_ret_cop",
+                            "atc_ret_cop",
+                            "net_ret_cop",
+                            "gross_diff",
+                            "atc_ret_diff",
+                            "net_ret_diff",
+                            "gross_sr_act",
+                            "net_sr_act",
+                            "net_sr_cop",
+                            "net_sr_diff")
+
+    alphas <- list()
+    for(size in c(10,50,250)) {
+        #size <- 50
+        decileData <- getDecileData(size)
+        alphaDeciles <- getAlphaDeciles(size)
+
+        decileData <- merge(
+            decileData,
+            alphaDeciles[, list(wfcin, year, month, alphas_decile)],
+            by = c("wfcin", "year", "month")
+        )
+
+        alphas[[as.character(size)]] <- list()
+        for(decileName in decileNames) {
+            # decileName <- "net_return_decile"
+
+            alphas[[as.character(size)]][[decileName]] <- list()
+
+            alphas[[as.character(size)]][[decileName]][["alpha"]]  <- data.table(decile = 1:11)
+            alphas[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+            alphas[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+
+
+            for(dependentVariable in dependentVariables) {
+                # dependentVariable <- "net_ret_diff"
+
+                # alphas for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(dependentVariable), na.rm =TRUE),
+                            mktrf = mean(mktrf),
+                            smb = mean(smb),
+                            hml = mean(hml),
+                            rf = mean(rf),
+                            umd = mean(umd)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+
+                    fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
+                    se <- coeftest(fm, NeweyWest(fm, lag = 2))
+
+                    alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
+                    alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
+                    alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := se[1,4]]
+                }
+
+                # alphas fore decile 1 minus decile 10
+                dataD1MinusD10 <- data[[1]]
+                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+
+                fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
+                se <- coeftest(fm, NeweyWest(fm, lag = 2))
+
+                alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
+                alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
+                alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
+
+            }
+        }
+    }
+
+    return(alphas)
+
 }
