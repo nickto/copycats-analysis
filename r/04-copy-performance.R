@@ -14,6 +14,7 @@ write(paste("\nStarted at:", s), file = "log.txt",
 # wfcin list for funds with errors
 wfcinErrors <- fread("error-wfcin-from-log.txt")
 wfcinList <- wfcinErrors[Copy == "ERROR", wfcin]
+print(paste("Total number of funds in this run:", length(wfcinList)))
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
 # get list of stock dates

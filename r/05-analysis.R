@@ -19,14 +19,31 @@ decileMeans <- getDecileMeans()
 decileAlphas <- getDecileAlphas()
 
 
+# write analysis resuts to file
+save.image(file = "analysis-results.RData")
+
+
+
+# # clear cache
+# clearDecileCache()
+# clearFundAndFactorsCache()
+# clearAlphaDecilesCache()
+#
+#
+#
+#
+#
+#
+# # create tables
+# createTable(value, tstat, pvalue)
+#
+# value <- decileMeans$`10`$primitive_return_decile$mean
+# tstat <- decileMeans$`10`$primitive_return_decile$tstat
+# pvalue <- decileMeans$`10`$primitive_return_decile$pvalue
 
 
 
 
-# clear cache
-clearDecileCache()
-clearFundAndFactorsCache()
-clearAlphaDecilesCache()
 
 
 
