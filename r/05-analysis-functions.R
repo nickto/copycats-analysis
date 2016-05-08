@@ -306,176 +306,6 @@ clearDecileCache <- function() {
     print("Cached decile data removed")
 }
 
-getDecileAnalyis <- function() {
-# This function return mean comparisons (with t-statistic and p-values) for
-# different decile sorting and different fund sizes. Note that decile 11
-# means decile 1 minus decile 10.
-#
-# The returned object is a list of lists... where the first level indicates
-# the fund size, the second level indicates which variable the deciles where
-# sorted, the third level contains difference statistics (means, t-stat etc),
-# each of this statistics is represented using a data table.
-
-    decileNames <- c("primitive_return_decile",
-                     "net_return_decile",
-                     "exp_ratio_decile",
-                     "sr_decile")
-    dependentVariables <- c("gross_ret_act",
-                            "net_ret_act",
-                            "gross_ret_cop",
-                            "atc_ret_cop",
-                            "net_ret_cop",
-                            "gross_diff",
-                            "atc_ret_diff",
-                            "net_ret_diff",
-                            "gross_sr_act",
-                            "net_sr_act",
-                            "net_sr_cop",
-                            "net_sr_diff")
-
-    means <- list()
-    for(size in c(10,50,250)) {
-        #size <- 50
-        decileData <- getDecileData(size)
-
-        means[[as.character(size)]] <- list()
-        for(decileName in decileNames) {
-            # decileName <- "net_return_decile"
-
-            means[[as.character(size)]][[decileName]] <- list()
-
-            means[[as.character(size)]][[decileName]][["mean"]]  <- data.table(decile = 1:11)
-            means[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
-            means[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
-
-
-            for(dependentVariable in dependentVariables) {
-                # dependentVariable <- "net_ret_diff"
-
-                # means for deciles 1 to 10
-                data <- list()
-                for(decile in 1:10) {
-                    # decile <- 2
-
-                    # get data for the current decile (averages)
-                    data[[decile]] <- decileData[get(decileName) == decile, list(
-                            monthMean = mean(get(dependentVariable), na.rm =TRUE)
-                        ), by = list(year, month)]
-                    setkey(data[[decile]], year, month)
-
-                    tTest <- t.test(data[[decile]][, monthMean])
-
-                    means[[as.character(size)]][[decileName]][["mean"]][decile, (dependentVariable) := tTest$estimate]
-                    means[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := tTest$statistic]
-                    means[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := tTest$p.value]
-                }
-
-                # means fore decile 1 minus decile 10
-                dataD1MinusD10 <- data[[1]]
-                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
-
-                tTest <- t.test(dataD1MinusD10[, monthMean])
-
-                means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
-                means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
-                means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
-            }
-        }
-    }
-
-    return(means)
-
-}
-
-getAlphas <- function() {
-# This function return carhart alphas (with t-statistic and p-values) for
-# different decile sorting and different fund sizes. Note that decile 11
-# means decile 1 minus decile 10.
-#
-# The returned object is a list of lists of lists, where the first level indicates
-# the fund size, the second level indicates which variable the deciles where
-# sorted, the third level contains difference statistics (alphas, t-stat etc),
-# each of this statistics is represented using a data table.
-
-    decileNames <- c("primitive_return_decile",
-                     "net_return_decile",
-                     "exp_ratio_decile",
-                     "sr_decile")
-    dependentVariables <- c("gross_ret_act",
-                            "net_ret_act",
-                            "gross_ret_cop",
-                            "atc_ret_cop",
-                            "net_ret_cop",
-                            "gross_diff",
-                            "atc_ret_diff",
-                            "net_ret_diff",
-                            "gross_sr_act",
-                            "net_sr_act",
-                            "net_sr_cop",
-                            "net_sr_diff")
-
-    alphas <- list()
-    for(size in c(10,50,250)) {
-        #size <- 50
-        decileData <- getDecileData(size)
-
-        alphas[[as.character(size)]] <- list()
-        for(decileName in decileNames) {
-            # decileName <- "net_return_decile"
-
-            alphas[[as.character(size)]][[decileName]] <- list()
-
-            alphas[[as.character(size)]][[decileName]][["alpha"]]  <- data.table(decile = 1:11)
-            alphas[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
-            alphas[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
-
-
-            for(dependentVariable in dependentVariables) {
-                # dependentVariable <- "net_ret_diff"
-
-                # alphas for deciles 1 to 10
-                data <- list()
-                for(decile in 1:10) {
-                    # decile <- 2
-
-                    # get data for the current decile (averages)
-                    data[[decile]] <- decileData[get(decileName) == decile, list(
-                            monthMean = mean(get(dependentVariable), na.rm =TRUE),
-                            mktrf = mean(mktrf),
-                            smb = mean(smb),
-                            hml = mean(hml),
-                            rf = mean(rf),
-                            umd = mean(umd)
-                        ), by = list(year, month)]
-                    setkey(data[[decile]], year, month)
-
-                    fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
-                    se <- coeftest(fm, NeweyWest(fm, lag = 2))
-
-                    alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
-                    alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
-                    alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := se[1,4]]
-                }
-
-                # alphas fore decile 1 minus decile 10
-                dataD1MinusD10 <- data[[1]]
-                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
-
-                fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
-                se <- coeftest(fm, NeweyWest(fm, lag = 2))
-
-                alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
-                alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
-                alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
-
-            }
-        }
-    }
-
-    return(alphas)
-
-}
-
 
 extractFundAndFactorsData <- function(size) {
     sql_command <- paste0("
@@ -695,7 +525,7 @@ clearAlphaDecilesCache <- function() {
 
 
 
-getDecileAnalyisWithAlphasDecile <- function() {
+getDecileMeans <- function() {
 # This function return mean comparisons (with t-statistic and p-values) for
 # different decile sorting and different fund sizes. Note that decile 11
 # means decile 1 minus decile 10.
@@ -783,7 +613,7 @@ getDecileAnalyisWithAlphasDecile <- function() {
     return(means)
 }
 
-getAlphasWithCA <- function() {
+getDecileAlphas <- function() {
 # This function return carhart alphas (with t-statistic and p-values) for
 # different decile sorting and different fund sizes. Note that decile 11
 # means decile 1 minus decile 10.

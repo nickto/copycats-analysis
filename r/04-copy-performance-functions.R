@@ -596,6 +596,11 @@ getStockLevelTradingCosts <- function(periodProportions, stockLevelChangesList, 
     for(i in 1:nrow(periodProportions)) {
         period <- periodProportions[i]
 
+        if(i > length(stockLevelChangesList)) {
+            # skip if there is no data in stockLevelChangeList
+            next
+        }
+
         if(period[, rebalance]) {
             perCom <- period[, perCom]
 

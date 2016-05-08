@@ -12,26 +12,21 @@ performanceComparison <- getCopycatPerformanceWholeSample()
 performanceComparisonByYear <- getCopycatPerformanceByYear()
 
 
-
-# # Decile analysis
-# decileMeans <- getDecileAnalyis()
-#
-# # Carhart regressions of deciles
-# decileAlphas <- getAlphas()
-
-
-
-# Assign deciles by carhart alphas
-decileMeansWithCA <- getDecileAnalyisWithAlphasDecile()
-decileAlphasWithCA <- getAlphasWithCA()
+# Get analysis by deciles
+# Means
+decileMeans <- getDecileMeans()
+# Carhart alphas
+decileAlphas <- getDecileAlphas()
 
 
 
 
 
 
-
+# clear cache
 clearDecileCache()
+clearFundAndFactorsCache()
+clearAlphaDecilesCache()
 
 
 
