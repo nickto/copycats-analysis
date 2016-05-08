@@ -10,7 +10,7 @@ write(paste("\nStarted at:", s), file = "log.txt",
 
 # get database query results
 # get list of of unique fund identifiers (wfcin)
-wfcinList <- getWfcinList()
+wfcinList <- sort(getWfcinList())    # wfcinList <- sort(getWfcinList(), decreasing = TRUE)
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
 # get list of stock dates
@@ -35,7 +35,7 @@ dbSendQuery(con, sql_command)
 # Loop through all funds
 set.seed(1200)
 fundNo <- 0
-for (wfcin in (sample_n(as.data.frame(wfcinList), 3))[,1]) {
+for (wfcin in (sample_n(as.data.frame(wfcinList), 300))[,1]) { # for (wfcin in wfcinList) { # for (wfcin in (sample_n(as.data.frame(wfcinList), 3))[,1]) {
     # wfcin <- 106067
     logMessage <- paste(
             paste0(inc(fundNo), ":"),
