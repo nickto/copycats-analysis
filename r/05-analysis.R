@@ -1,7 +1,4 @@
-# to-do:
-# - carhart regressions
-# - carhart alpha sorting (?)
-
+source("./r/01-load-packages.R")
 source("./r/02-connect-to-db.R")
 source("./r/05-analysis-functions.R")
 
