@@ -626,7 +626,8 @@ getDecileAlphas <- function() {
     decileNames <- c("primitive_return_decile",
                      "net_return_decile",
                      "exp_ratio_decile",
-                     "sr_decile")
+                     "sr_decile",
+                     "alphas_decile")
     dependentVariables <- c("gross_ret_act",
                             "net_ret_act",
                             "gross_ret_cop",
@@ -707,4 +708,181 @@ getDecileAlphas <- function() {
 
     return(alphas)
 
+}
+
+
+
+createTable <- function(decileMeans, decileAlphas) {
+
+    # --------------------------------------------------------------------------
+    # Define local functions
+    # Function for creating a panle
+    createPanel <- function(decileBy, decileData, measure) {
+        # This function accepts the variable name by which deciles are created,
+        # a list with decile statistics (means or alphas) and which statistics
+        # where calculated ("mean" or "alpha")
+        #
+        # It returns a list of three elements: measure, tstat, pvalue, where
+        # each element corresponds to the layout of the table in latex.
+
+        getPanel <- function(measure) {
+            panel <- data.table(
+                decile        = decileData$`10`[[decileBy]][[measure]]$decile,
+                grossRetPrim  = decileData$`10`[[decileBy]][[measure]]$gross_ret_act,
+                grossRetCopy  = decileData$`10`[[decileBy]][[measure]]$gross_ret_cop,
+                grossRetDiff  = decileData$`10`[[decileBy]][[measure]]$gross_diff,
+                netRetPrim    = decileData$`10`[[decileBy]][[measure]]$net_ret_act,
+                netRetCopy10  = decileData$`10`[[decileBy]][[measure]]$net_ret_cop,
+                netRetCopy50  = decileData$`50`[[decileBy]][[measure]]$net_ret_cop,
+                netRetCopy250 = decileData$`250`[[decileBy]][[measure]]$net_ret_cop,
+                netRetDiff10  = decileData$`10`[[decileBy]][[measure]]$net_ret_diff,
+                netRetDiff50  = decileData$`50`[[decileBy]][[measure]]$net_ret_diff,
+                netRetDiff250 = decileData$`250`[[decileBy]][[measure]]$net_ret_diff
+            )
+            return(panel)
+        }
+
+        panel <- list()
+        panel$measure <- getPanel(measure)
+        panel$tstat   <- getPanel("tstat")
+        panel$pvalue  <- getPanel("pvalue")
+
+        return(panel)
+    }
+
+    getFormattedNumber <- function(stat,
+                                   pvalue = NULL,
+                                   percent = FALSE,
+                                   tstat = FALSE,
+                                   roundN = 2) {
+        # this function accepts statistics, it's pvalue (if it is not t-stat)
+        # and returns formatted version of it. tstat indicates whether this is a
+        # t-statitcs (formatted differently). If percent = TRUE, the number is
+        # multiplied by 100 before conversion.
+
+        if(!tstat) {
+            # convert decimal to percentage if nccessary
+            if(percent) {
+                stat <- stat * 100
+            }
+
+            statStr <- format(round(stat, roundN), nsmall = roundN)
+            statStr <- paste0("\\num{", statStr ,"}")
+            # add significance asterisks
+            if(pvalue <= 0.1) {
+                statStr <- paste0(statStr, "*\\phantom{**)}")
+            } else if(pvalue <= 0.5) {
+                statStr <- paste0(statStr, "**\\phantom{*)}")
+            } else if(pvalue <= 0.01) {
+                statStr <- paste0(statStr, "***\\phantom{)}")
+            } else {
+                statStr <- paste0(statStr, "\\phantom{***)}")
+            }
+        } else {
+            statStr <- format(round(stat, roundN), nsmall = roundN)
+            statStr <- paste0("(\\num{", statStr, "})\\phantom{***}")
+        }
+
+        return(statStr)
+    }
+
+    writePanel <- function(outputFileName, decileData, panelCaption, measure) {
+        # Add panel name to a file
+        panelNameString <- paste0(
+            "\t\t\\midrule\n\t\t\\mc{11}{l}{\\scriptsize{\\textit{\\quad ",
+            panelCaption,
+            "}}} \\\\[\\panelspacing]",
+            sep = ""
+        )
+        write(panelNameString, file = outputFileName, append = TRUE)
+
+
+        # get panel
+        cat(decileBy, measure, "\n")
+        panel <- createPanel(decileBy, decileData, measure)
+
+        for(row in 1:nrow(panel$measure)) {
+            for(col in 1:ncol(panel$measure)) {
+                # check if this is the first column (it is special for both
+                # statistics and t-statistics)
+                if(col == 1) {
+                    # statistics: decile name
+                    if(panel$measure[row, col] == 11) {
+                        # This is a D1-D10 decile
+                        statRow <- paste("\t\t\\decilename{D1$-$D10}")
+                    } else {
+                        # This is a usual decile
+                        statRow <- paste0(
+                            "\t\t\\decilename{D",
+                            panel$measure[row, col, with = FALSE],
+                            "}"
+                        )
+                    }
+                    # t-statistics: empty column
+                    tStatRow <- "\t\t"
+                } else {
+                    # statistics row
+                    statRow <- paste0(
+                        statRow,
+                        " & ",
+                        getFormattedNumber(
+                            panel$measure[row, col, with = FALSE],
+                            panel$pvalue[row, col, with = FALSE],
+                            percent = TRUE,
+                            tstat = FALSE
+                        )
+                    )
+
+                    # t-statistics row
+                    tStatRow <- paste0(
+                        tStatRow,
+                        " & ",
+                        getFormattedNumber(
+                            panel$tstat[row, col, with = FALSE],
+                            percent = TRUE,
+                            tstat = TRUE
+                        )
+                    )
+                }
+            }
+
+            # write statistics row
+            statRow <- paste(statRow, "\\\\")
+            write(statRow, file = outputFileName, append = TRUE)
+            # write t-statistics row
+            tStatRow <- paste(tStatRow, "\\\\ [\\dspacing]")
+            write(tStatRow, file = outputFileName, append = TRUE)
+        }
+    }
+    # --------------------------------------------------------------------------
+
+
+    decileNames <- c("primitive_return_decile",
+                     "net_return_decile",
+                     "exp_ratio_decile",
+                     "sr_decile",
+                     "alphas_decile")
+
+    for(decileBy in decileNames) {
+        # setup ouput file name
+        outputFileName <- paste0("latex/tables_deciles_by_", decileBy,".tex")
+
+        # add text that goes before panels
+        fileName1 <- "latex/part-01-before-panels.tex"
+        file.copy(fileName1, outputFileName, overwrite = TRUE)
+
+
+        # add means panel
+        panelCaption <- "Panel A: simple averages"
+        writePanel(outputFileName, decileMeans, panelCaption, "mean")
+
+        # add alphas panel
+        panelCaption <- "Panel B: Carhart alphas"
+        writePanel(outputFileName, decileAlphas, panelCaption, "alpha")
+
+
+        # add text that goes after panels
+        fileName2 <- "latex/part-02-after-panels.tex"
+        file.append(outputFileName, fileName2)
+    }
 }

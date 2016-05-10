@@ -28,18 +28,14 @@ save.image(file = "analysis-results.RData")
 # clearDecileCache()
 # clearFundAndFactorsCache()
 # clearAlphaDecilesCache()
-#
-#
-#
-#
-#
-#
-# # create tables
-# createTable(value, tstat, pvalue)
-#
-# value <- decileMeans$`10`$primitive_return_decile$mean
-# tstat <- decileMeans$`10`$primitive_return_decile$tstat
-# pvalue <- decileMeans$`10`$primitive_return_decile$pvalue
+
+
+
+
+
+# create tables
+createTable(decileMeans, decileAlphas)
+
 
 
 

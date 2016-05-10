@@ -1,6 +1,11 @@
-.Rhistory
+*.Rhistory
+*.RData
 
-log*
+
+
+*log.txt
+
+/latex/table-*.tex
 
 /bin/
 /data/
