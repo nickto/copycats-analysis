@@ -100,6 +100,8 @@ getStockDates <- function() {
 }
 
 getCashReturn <- function() {
+    # This function returns the times series of monthly cash returns.
+
     sql_command <- paste0("
         select
           caldt as date,
@@ -110,6 +112,9 @@ getCashReturn <- function() {
 }
 
 getOtherReturn <- function() {
+    # This function returns the monthly time-series of returns of other assets
+    # which are assumed to be bonds.
+
     bondIndex <- fread(
         "data/raw/fred-bond-index-1989-12-2016-05.csv",
         skip = 10,
@@ -281,8 +286,6 @@ getStockData <- function(holdings, startEndDates) {
         unique(holdings[!is.na(cusip), cusip]),
         collapse = "', '"
     )
-
-
 
     # stockDataDate > 0 is a stupid workaround, because na.rm = TRUE for
     # some reason does not work
@@ -544,6 +547,8 @@ getStockLevelChanges <- function(periods, stockLevelReturnsList) {
 }
 
 getPeriodProportions <- function(wfcin, periods, averageCash) {
+    # This function returns proportions of different asset classes:
+    # equity, cash, other in each period.
 
     # get information about asset classes proportion
     sql_command <- paste0("
@@ -659,6 +664,8 @@ getStockLevelTradingCosts <- function(periodProportions, stockLevelChangesList, 
 }
 
 getPeriodReturnsAndCosts <- function(stockLevelReturnsList, stockLevelTradingCosts) {
+    # This function returns returns and costs on stock level.
+
     # Create data tables from lists
     returns <- rbindlist(stockLevelReturnsList)
     setkey(returns, start, cusip)
@@ -706,6 +713,7 @@ getPeriodReturnsAndCosts <- function(stockLevelReturnsList, stockLevelTradingCos
 }
 
 getPeriodReturns <- function(periodReturnsAndCosts, periods, cashReturn, otherReturn) {
+    # This function aggregates returns from stock level to period level.
 
     # combine period data with stock returns
     periodReturns <- merge(
@@ -778,6 +786,8 @@ getPeriodReturns <- function(periodReturnsAndCosts, periods, cashReturn, otherRe
 }
 
 getMonthlyCopycatReturns <- function(periodReturns) {
+    # This function aggregates returns from period to monthly levels.
+
     periodReturns[, month := month(end)]
     periodReturns[, year := year(end)]
 
@@ -810,6 +820,7 @@ getMonthlyCopycatReturns <- function(periodReturns) {
 }
 
 getActualReturns <- function(monthlyCopycatReturns, wficn, averageExpenseRatio) {
+    # This function returns monthly returns of primitive (actual) funds.
     sql_command <- paste0("
         with
         mret as (
@@ -874,6 +885,8 @@ getActualReturns <- function(monthlyCopycatReturns, wficn, averageExpenseRatio) 
 }
 
 writeTableToCopycats <- function(monthlyReturns, wfcin) {
+    # Write calculated copycat performance to the database.
+
     # check if this fund is already in db
     sql_command <- paste0("
        select
@@ -904,6 +917,8 @@ writeTableToCopycats <- function(monthlyReturns, wfcin) {
 }
 
 addLogEntry <- function(message, file, first = FALSE) {
+    # Add log entry to the log file.
+
     if(first) {
         header <- paste(
             "No",
