@@ -1,3 +1,11 @@
+# Overall outline of the procedure in this file.
+# First we load packages, function, and connect to the database.
+# Then we extract information that is common for all funds from the database and
+# store it in the memory.
+# Then we set up databses: create schemas (tmp schema is a legacy. Can be
+# removed).
+#
+
 source("./r/02-connect-to-db.R")
 source("./r/04-copy-performance-functions.R")
 
@@ -10,14 +18,14 @@ write(paste("\nStarted at:", s), file = "log.txt",
 
 # get database query results
 # get list of of unique fund identifiers (wfcin)
-wfcinList <- sort(getWfcinList())    # wfcinList <- sort(getWfcinList(), decreasing = TRUE)
+wfcinList <- sort(getWfcinList())
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
 # get list of stock dates
 stockDatesAll <-getStockDates()
 # get daily cash returns
 cashReturn <- getCashReturn()
-# get daily other returns
+# get daily other returns (note that after a change, this is not from db already)
 otherReturn <- getOtherReturn()
 # get average monthly expense ratio
 averageExpenseRatio <- getAverageExpenseRatio()
@@ -33,28 +41,32 @@ dbSendQuery(con, sql_command)
 #-------------------------------------------------------------------------------
 
 # Loop through all funds
-set.seed(1612)
+# is needed for random sampling. Does not affect anything if run on whole sample
+# set.seed(1612)
+# sampleSize <- 300
+
 fundNo <- 0
-for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_n(as.data.frame(wfcinList), 3))[,1]) {
-    # wfcin <- 106067
+# for whole sample:
+# for (wfcin in wfcinList) {
+# for random sample:
+# for (wfcin in (sample_n(as.data.frame(wfcinList), sampleSize))[,1]) {
+for (wfcin in wfcinList) {
+    # start log message for this fund
     logMessage <- paste(
             paste0(inc(fundNo), ":"),
             wfcin,
             sep = "\t"
         )
 
-
-
     # add timing information
     t <- system.time({
 
     # run whole code through tryCatch to avoid stopping the program due to errors
-    # in a fund
+    # in a fund. Errors are mostly when fund holdings containg stocks that
+    # are not present in the CRSP database.
     errorInCalculations <- FALSE
     errorInWriteToDb <- FALSE
     tryCatch(suppressWarnings({
-
-
 
         # get holdings of this fund
         holdings <- getHoldings(wfcin, stockDatesAll, startEndDates)
@@ -63,7 +75,8 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
         startEndDates <- getStartEndDates(holdings)
         # check whether there is a period to analyze
         if(startEndDates[1,start] >= startEndDates[1,end]) {
-            # start date is greater than end date: skip this fund
+            # start date is greater than end date: skip this fund, add log
+            # message
             logMessage <- paste(
                     logMessage,
                     "skip",
@@ -79,49 +92,69 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
             next()
         }
 
-        # subset holdings
+        # subset holdings from start to end date
         holdings <- subsetHoldings(holdings, startEndDates)
 
-        # get stock information
+        # get stock information about all stocks in the holdings of the fund
         stocks <- getStockData(holdings, startEndDates)
 
-        # get periods with key dates
-        periods <- getPeriodDates(startEndDates, stockDatesAll, holdings)
+        # get periods with key dates. Period is a period of time from the
+        # first working day of the month to the last. If there is a rebalancing
+        # in the middle of the month, then the month gets splitted into two
+        # periods, where first is from the beginning of the month till the
+        # rebalancing date, and the second is from the rebalancing date to the
+        # end of the month
+        periods <- getPeriodDates(startEndDates,
+                                  stockDatesAll,
+                                  holdings)
 
         # get returns at the stock level
-        setkey(stocks, cusip, date)
-        stockLevelReturnsList <- getStockLevelGrossReturns(periods, holdings, stocks)
+        setkey(stocks, cusip, date) # ensure that DT is sorted in a right way
+        stockLevelReturnsList <- getStockLevelGrossReturns(periods,
+                                                           holdings,
+                                                           stocks)
 
-        # get changes in weights at the stock level
-        stockLevelChangesList <- getStockLevelChanges(periods, stockLevelReturnsList)
+        # get changes in weights at the stock level on rebalancing dates
+        stockLevelChangesList <- getStockLevelChanges(periods,
+                                                      stockLevelReturnsList)
 
         # get proprtion of asset classes for each period
-        periodProportions <- getPeriodProportions(wfcin, periods, averageCash)
+        periodProportions <- getPeriodProportions(wfcin,
+                                                  periods,
+                                                  averageCash)
 
         # get stock level trading costs
-        stockLevelTradingCosts <- getStockLevelTradingCosts(periodProportions, stockLevelChangesList, stocks)
+        stockLevelTradingCosts <- getStockLevelTradingCosts(periodProportions,
+                                                            stockLevelChangesList,
+                                                            stocks)
 
         # get gross returns and cost terms for each period
-        periodReturnsAndCosts <- getPeriodReturnsAndCosts(stockLevelReturnsList, stockLevelTradingCosts)
+        periodReturnsAndCosts <- getPeriodReturnsAndCosts(stockLevelReturnsList,
+                                                          stockLevelTradingCosts)
 
         # get period returns of all asset classes
-        periodReturns <- getPeriodReturns(periodReturnsAndCosts, periods, cashReturn, otherReturn)
+        periodReturns <- getPeriodReturns(periodReturnsAndCosts,
+                                          periods,
+                                          cashReturn,
+                                          otherReturn)
 
         # get monthly returns of copycat
         monthlyCopycatReturns <- getMonthlyCopycatReturns(periodReturns)
 
-        # add data on actual returns
-        monthlyReturns <- getActualReturns(monthlyCopycatReturns, wficn, averageExpenseRatio)
+        # add data on actual (primitive funds) returns
+        monthlyReturns <- getActualReturns(monthlyCopycatReturns,
+                                           wficn,
+                                           averageExpenseRatio)
 
 
     }), error=function(cond) {
         message(paste("Error in fund calculations; wfcin = ", wfcin))
         errorInCalculations <<- TRUE
     #}, warning=function(cond) {
-    #    print("warning")
-    #    print(cond)
+    #   warning is commented, because in this case we are interested only in
+    #   errors
     },finally=function(cond){
-        # maybe we should write something here... but later!
+        # we do not need to take any actions
     })
 
 
@@ -134,19 +167,18 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
             message(paste("Error in fund writing to db; wfcin = ", wfcin))
             errorInWriteToDb <<- TRUE
         #}, warning=function(cond) {
-        #    print("warning")
-        #    print(cond)
+        #   warning is commented, because in this case we are interested only in
+        #   errors
         },finally=function(cond){
-            # maybe we should write something here... but later!
+            # we do not need to take any actions
         })
 
     }
 
-
     }) # this bracket ends system.time() function
 
 
-    #  add information to log
+    #  add error information to log
     if(errorInCalculations) {
         logMessage <- paste(logMessage,
                             "ERROR",
@@ -166,18 +198,20 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
                                 sep = "\t")
         }
     }
+
     # add time information to log
     logMessage <- paste(logMessage,
                         round(t["elapsed"], 2),
                         sep = "\t")
 
+    # print to log files
     if(fundNo == 1) {
         addLogEntry(logMessage, "log.txt", TRUE)
     } else {
         addLogEntry(logMessage, "log.txt")
     }
 
-    # print message
+    # print log message to the screen
     cat(paste(logMessage, "\n"))
 
     # force garbage collector
@@ -189,4 +223,4 @@ print(paste("Finished in:", Sys.time() - s))
 
 # disconnect from database and remove all vairbales. This is needed for testing
 # purposes to make a clean run.
-#dbDisconnect(con); rm(list = ls())
+# dbDisconnect(con); rm(list = ls())

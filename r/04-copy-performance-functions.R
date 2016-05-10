@@ -1,4 +1,5 @@
 inc <- function(x, n = 1){
+  # This function is analogoues to x++
   eval.parent(substitute(x <- x + n))
 }
 
@@ -41,13 +42,10 @@ getWfcinList <- function() {
           w.wfcin = mm.wfcin
         where
           mm.min > 0 and
-          mm.max <
+          mm.max < 120 AND
           w.wfcin is not null
         ORDER BY mm.max desc
     "
-
-
-
 
     wfcinList <- dbGetQuery(con, sql_command)
 
