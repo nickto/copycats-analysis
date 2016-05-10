@@ -1599,7 +1599,7 @@ blockquote {
 </tr>
 <tr class="even">
 <td align="left"><strong>Step 2: Apply your company codes.</strong></td>
-<td align="left">Select an option for entering company codes</td>
+<td align="left">Select an option for entering company codes (<code>ncusip</code>)</td>
 <td align="left">Upload a <code>cusip-list.txt</code> file that results from running <code>03-export-cusips.R</code></td>
 </tr>
 <tr class="odd">
@@ -1629,7 +1629,7 @@ blockquote {
 </tr>
 </tbody>
 </table>
-<p>The output is saved into <code>~/data/</code> directory under the name <code>wrds-crsp-stocks-19900101-20151231.csv.gz</code>.</p>
+<p>The output is saved into <code>~/data/</code> directory under the name <code>wrds-crsp-stocks-daily-19900101-20151231.csv.gz</code>.</p>
 </div>
 <div id="data-request-summary-13" class="section level4">
 <h4>Data request summary</h4>
@@ -1648,7 +1648,7 @@ blockquote {
 <tbody>
 <tr class="odd">
 <td align="left">Data Request ID</td>
-<td align="left">c15756b0ac0282d7</td>
+<td align="left">4650f4eafedbc982</td>
 </tr>
 <tr class="even">
 <td align="left">Libraries/Data Sets</td>
@@ -1660,7 +1660,7 @@ blockquote {
 </tr>
 <tr class="even">
 <td align="left">Search Variable</td>
-<td align="left">CUSIP</td>
+<td align="left">NCUSIP</td>
 </tr>
 <tr class="odd">
 <td align="left">Input Codes all item(s) 55555 item(s)</td>
@@ -1690,6 +1690,228 @@ blockquote {
 <div id="mflinks" class="section level2">
 <h2>MFLINKS</h2>
 <p>We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method.</p>
+</div>
+<div id="sp-1200-global-index" class="section level2">
+<h2>S&amp;P 1200 Global index</h2>
+<p>We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method. However, it looks like it cam from Bloomberg.</p>
+</div>
+<div id="bond-index" class="section level2">
+<h2>Bond index</h2>
+<p>We use BofA Merrill Lynch US Corp 3-5yr Total Return Index Value for our bond index to approximate bond returns. It can be obtained from <a href="https://research.stlouisfed.org/fred2/series/BAMLCC2A035YTRIV">here</a>.</p>
+</div>
+<div id="cash-return" class="section level2">
+<h2>Cash return</h2>
+<div id="crsp-treasuries---issue-descriptions-and-daily-time-series" class="section level3">
+<h3>CRSP TREASURIES - Issue Descriptions and Daily Time Series</h3>
+<p>This data was extracted on 2016-04-20.</p>
+<div id="query-form-14" class="section level4">
+<h4>Query form</h4>
+<table style="width:28%;">
+<colgroup>
+<col width="6%"></col>
+<col width="11%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Step</th>
+<th align="left">Field</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Step 1: Choose your date range.</strong></td>
+<td align="left">Date range</td>
+<td align="left"><code>1990-01-01</code>–<code>2015-12-31</code></td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Step 2: Bond Properties (Optional).</strong></td>
+<td align="left">Type of issue</td>
+<td align="left">Treasury Bill</td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Conditional Statements (Optional)</td>
+<td align="left">None (leave fields empty)</td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Step 2: Query Variables.</strong></td>
+<td align="left">Select</td>
+<td align="left">Treasury CUSIP, Daily Unadjusted Return</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Step 3: Select query output.</strong></td>
+<td align="left">Output Format</td>
+<td align="left"><code>comma-delimited text (*.csv)</code></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">Compression Type</td>
+<td align="left"><code>gzip (*.gz)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Date Format</td>
+<td align="left"><code>YYMMDDs10. (e.g. 1984/07/25)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The output is saved into <code>~/data/</code> directory under the name <code>wrds-crsp-t-bills-daily-19900101-20153112.csv.gz</code>.</p>
+</div>
+<div id="data-request-summary-14" class="section level4">
+<h4>Data request summary</h4>
+<p>Data request summary:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Data Request ID</td>
+<td align="left">b5c3acf2b7496952</td>
+</tr>
+<tr class="even">
+<td align="left">Libraries/Data Sets</td>
+<td align="left">crspa/tfz_dly /</td>
+</tr>
+<tr class="odd">
+<td align="left">Frequency/Date Range</td>
+<td align="left">/ 01Jan1990 - 31Dec2015</td>
+</tr>
+<tr class="even">
+<td align="left">Search Variable</td>
+<td align="left">caldt</td>
+</tr>
+<tr class="odd">
+<td align="left">Input Codes all item(s)</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Conditional Statements</td>
+<td align="left">n/a</td>
+</tr>
+<tr class="odd">
+<td align="left">Output format/Compression</td>
+<td align="left">csv / gz</td>
+</tr>
+<tr class="even">
+<td align="left">Variables Selected</td>
+<td align="left">TCUSIP TDRETNUA</td>
+</tr>
+<tr class="odd">
+<td align="left">Extra Variables and Parameters Selected</td>
+<td align="left">4</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div id="carhart-factors" class="section level2">
+<h2>Carhart factors</h2>
+<div id="fama-french-factors---monthly-frequency" class="section level3">
+<h3>Fama-French Factors - Monthly Frequency</h3>
+<p>This data was extracted on 2016-04-27.</p>
+<div id="query-form-15" class="section level4">
+<h4>Query form</h4>
+<table style="width:28%;">
+<colgroup>
+<col width="6%"></col>
+<col width="11%"></col>
+<col width="9%"></col>
+</colgroup>
+<thead>
+<tr class="header">
+<th align="left">Step</th>
+<th align="left">Field</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left"><strong>Step 1: Choose your date range.</strong></td>
+<td align="left">Date range</td>
+<td align="left"><code>1990-01</code>–<code>2016-01</code></td>
+</tr>
+<tr class="even">
+<td align="left"><strong>Step 2: Choose factors for query Variables.</strong></td>
+<td align="left">Select</td>
+<td align="left">All</td>
+</tr>
+<tr class="odd">
+<td align="left"><strong>Step 3: Select query output.</strong></td>
+<td align="left">Output Format</td>
+<td align="left"><code>comma-delimited text (*.csv)</code></td>
+</tr>
+<tr class="even">
+<td align="left"></td>
+<td align="left">Compression Type</td>
+<td align="left"><code>gzip (*.gz)</code></td>
+</tr>
+<tr class="odd">
+<td align="left"></td>
+<td align="left">Date Format</td>
+<td align="left"><code>YYMMDDs10. (e.g. 1984/07/25)</code></td>
+</tr>
+</tbody>
+</table>
+<p>The output is saved into <code>~/data/</code> directory under the name <code>wrds-ff-monthly-199001-201601.csv.gz</code>.</p>
+</div>
+<div id="data-request-summary-15" class="section level4">
+<h4>Data request summary</h4>
+<p>Data request summary:</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Data Request ID</td>
+<td align="left">Fama-French Factors - Monthly Frequency</td>
+</tr>
+<tr class="even">
+<td align="left">Libraries/Data Sets</td>
+<td align="left">ff/factors_monthly /</td>
+</tr>
+<tr class="odd">
+<td align="left">Frequency/Date Range</td>
+<td align="left">/ 01Jan1990 - 29Jan2016</td>
+</tr>
+<tr class="even">
+<td align="left">Search Variable</td>
+<td align="left"></td>
+</tr>
+<tr class="odd">
+<td align="left">Input Codes all item(s)</td>
+<td align="left"></td>
+</tr>
+<tr class="even">
+<td align="left">Conditional Statements</td>
+<td align="left">n/a</td>
+</tr>
+<tr class="odd">
+<td align="left">Output format/Compression</td>
+<td align="left">csv / gz</td>
+</tr>
+<tr class="even">
+<td align="left">Variables Selected</td>
+<td align="left">SMB HML MKTRF RF UMD</td>
+</tr>
+<tr class="odd">
+<td align="left">Extra Variables and Parameters Selected</td>
+<td align="left"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
 </div>
 <div id="variable-description" class="section level2">
 <h2>Variable description</h2>
@@ -2904,8 +3126,8 @@ blockquote {
 </div>
 <div id="crsp-stock-data-1" class="section level3">
 <h3>CRSP Stock Data</h3>
-<div id="type-4-change-in-holdings-2" class="section level4">
-<h4>Type 4: change in holdings</h4>
+<div id="daily" class="section level4">
+<h4>Daily</h4>
 <p>Thomson Reuters Mutual Fund Holdings - Type 2: Stock Characteristics</p>
 <table>
 <thead>
@@ -3189,6 +3411,128 @@ blockquote {
 </tbody>
 </table>
 </div>
+</div>
+</div>
+<div id="cash-return-1" class="section level2">
+<h2>Cash return</h2>
+<div id="crsp-treasuries---issue-descriptions-and-daily-time-series-1" class="section level3">
+<h3>CRSP TREASURIES - Issue Descriptions and Daily Time Series</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Library:</td>
+<td align="left">crspa</td>
+</tr>
+<tr class="even">
+<td align="left">File:</td>
+<td align="left">tfz_dly</td>
+</tr>
+<tr class="odd">
+<td align="left">Data Range:</td>
+<td align="left">06/14/1961 - 12/31/2015</td>
+</tr>
+<tr class="even">
+<td align="left">Last Updated On:</td>
+<td align="left">02/02/2016</td>
+</tr>
+<tr class="odd">
+<td align="left">Update Schedule:</td>
+<td align="left">Annually</td>
+</tr>
+</tbody>
+</table>
+<p>Variable Reference</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Variable Name</th>
+<th align="left">Variable Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">TCUSIP</td>
+<td align="left">Treasury CUSIP</td>
+</tr>
+<tr class="even">
+<td align="left">TDRETNUA</td>
+<td align="left">Daily Unadjusted Return</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div id="carhart-factors-1" class="section level2">
+<h2>Carhart factors</h2>
+<div id="fama-french-factors---monthly-frequency-1" class="section level3">
+<h3>Fama-French Factors - Monthly Frequency</h3>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Key</th>
+<th align="left">Value</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Library:</td>
+<td align="left">crspa</td>
+</tr>
+<tr class="even">
+<td align="left">File:</td>
+<td align="left">factors_monthly</td>
+</tr>
+<tr class="odd">
+<td align="left">Data Range:</td>
+<td align="left">07/01/1926 - 01/29/2016</td>
+</tr>
+<tr class="even">
+<td align="left">Last Updated On:</td>
+<td align="left">03/14/2016</td>
+</tr>
+<tr class="odd">
+<td align="left">Update Schedule:</td>
+<td align="left">Quarterly</td>
+</tr>
+</tbody>
+</table>
+<p>Variable Reference</p>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Variable Name</th>
+<th align="left">Variable Description</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">hml</td>
+<td align="left">High Minus Low (HML)</td>
+</tr>
+<tr class="even">
+<td align="left">mktrf</td>
+<td align="left">Excess Return on the Market (MKTRF)</td>
+</tr>
+<tr class="odd">
+<td align="left">rf</td>
+<td align="left">Risk-Free Interest Rate (One Month Treasury Bill Rate) (RF)</td>
+</tr>
+<tr class="even">
+<td align="left">smb</td>
+<td align="left">Small Minus Big (SMB)</td>
+</tr>
+<tr class="odd">
+<td align="left">umd</td>
+<td align="left">Momentum (UMD)</td>
+</tr>
+</tbody>
+</table>
 </div>
 </div>
 

@@ -112,13 +112,24 @@ getCashReturn <- function() {
 }
 
 getOtherReturn <- function() {
-    sql_command <- paste0("
-        select
-          date,
-          ret
-        from global.daily
-    ")
-    return(as.data.table(dbGetQuery(con, sql_command)))
+    bondIndex <- fread(
+        "data/raw/fred-bond-index-1989-12-2016-05.csv",
+        skip = 10,
+        na.strings = "#N/A"
+    )
+    setnames(bondIndex,
+             c("observation_date", "BAMLCC2A035YTRIV"),
+             c("date", "index"))
+    bondIndex[, lagIndex := shift(
+        bondIndex[, index],
+        n = 1,
+        type = "lag")]
+    bondIndex[, ret := index / lagIndex - 1]
+    bondIndex[is.na(ret), ret := 0]
+
+    bondIndex[, list(date, ret)]
+
+    return(bondIndex[, list(date, ret)])
 }
 
 getAverageExpenseRatio <- function() {

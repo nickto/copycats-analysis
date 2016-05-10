@@ -501,6 +501,8 @@ We were unable to extract this data ourselves and asked help. Therefore, we are 
 ## S&P 1200 Global index
 We were unable to extract this data ourselves and asked help. Therefore, we are unaware of the exact source, date and extraction method. However, it looks like it cam from Bloomberg.
 
+## Bond index
+We use BofA Merrill Lynch US Corp 3-5yr Total Return Index Value for our bond index to approximate bond returns. It can be obtained from [here](https://research.stlouisfed.org/fred2/series/BAMLCC2A035YTRIV).
 
 ## Cash return
 ### CRSP TREASURIES - Issue Descriptions and Daily Time Series

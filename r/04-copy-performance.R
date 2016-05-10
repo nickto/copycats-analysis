@@ -10,11 +10,7 @@ write(paste("\nStarted at:", s), file = "log.txt",
 
 # get database query results
 # get list of of unique fund identifiers (wfcin)
-# wfcinList <- sort(getWfcinList())    # wfcinList <- sort(getWfcinList(), decreasing = TRUE)
-# wfcin list for funds with errors
-wfcinErrors <- fread("error-wfcin-from-log.txt")
-wfcinList <- wfcinErrors[Copy == "ERROR", wfcin]
-print(paste("Total number of funds in this run:", length(wfcinList)))
+wfcinList <- sort(getWfcinList())    # wfcinList <- sort(getWfcinList(), decreasing = TRUE)
 # get average cash-TNA ratio
 averageCash <- getAverageCash()
 # get list of stock dates
@@ -37,7 +33,7 @@ dbSendQuery(con, sql_command)
 #-------------------------------------------------------------------------------
 
 # Loop through all funds
-set.seed(1200)
+set.seed(1612)
 fundNo <- 0
 for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_n(as.data.frame(wfcinList), 3))[,1]) {
     # wfcin <- 106067
@@ -185,45 +181,13 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
     # print message
     cat(paste(logMessage, "\n"))
 
-
-
-    # graphs
-    # ind <- monthlyReturns
-    # ind[, index_net_original := cumprod(1 + net_ret_act)]
-    # ind[, index_net_copied := cumprod(1 + net_ret_10m_cop)]
-    # ind[, index_gross_original := cumprod(1 + gross_ret_act)]
-    # ind[, index_gross_copied := cumprod(1 + gross_ret_cop)]
-    #
-    # indN <- as.xts.data.table(ind[, list(caldt,index_net_original,index_net_copied)])
-    # indG <- as.xts.data.table(ind[, list(caldt,index_gross_original,index_gross_copied)])
-    #
-    # autoplot(indG) +
-    #     ggtitle("Comparison of gross return indeces") +
-    #     xlab("Date") +
-    #     ylab("Index value")
-    # g$panel$layout$variable <- c("Copycat", "Original")
-    # grid.draw(ggplot_gtable(g))
-    # autoplot(indN) +
-    #     ggtitle("Comparison of net return indeces") +
-    #     xlab("Date") +
-    #     ylab("Index value")
-    #
-    # retN <- as.xts.data.table(ind[, list(caldt,net_ret_act,net_ret_10m_cop)])
-    # retG <- as.xts.data.table(ind[, list(caldt,gross_ret_act,gross_ret_cop)])
-    #
-    # autoplot(retN)
-    # autoplot(retG)
-
-
-
-    #print(paste0(iWfcin,"/",nWfcin))
-    #iWfcin = iWfcin + 1
+    # force garbage collector
     gc()
-
 }
 
 print(paste("Finished in:", Sys.time() - s))
 
 
-
+# disconnect from database and remove all vairbales. This is needed for testing
+# purposes to make a clean run.
 #dbDisconnect(con); rm(list = ls())
