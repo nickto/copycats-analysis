@@ -769,12 +769,12 @@ createTable <- function(decileMeans, decileAlphas) {
             statStr <- format(round(stat, roundN), nsmall = roundN)
             statStr <- paste0("\\num{", statStr ,"}")
             # add significance asterisks
-            if(pvalue <= 0.1) {
-                statStr <- paste0(statStr, "*\\phantom{**)}")
-            } else if(pvalue <= 0.5) {
-                statStr <- paste0(statStr, "**\\phantom{*)}")
-            } else if(pvalue <= 0.01) {
+            if(pvalue <= 0.01) {
                 statStr <- paste0(statStr, "***\\phantom{)}")
+            } else if(pvalue <= 0.05) {
+                statStr <- paste0(statStr, "**\\phantom{*)}")
+            } else if(pvalue <= 0.1) {
+                statStr <- paste0(statStr, "*\\phantom{**)}")
             } else {
                 statStr <- paste0(statStr, "\\phantom{***)}")
             }
