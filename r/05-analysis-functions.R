@@ -23,7 +23,7 @@ getCopycatPerformanceWholeSample <- function() {
       atc_ret_250m_cop - net_ret_act as atc_diff_250m,
       net_ret_10m_cop - net_ret_act as net_diff_10m,
       net_ret_50m_cop - net_ret_act as net_diff_50m,
-      net_ret_250m_cop - gross_ret_act as net_diff_250m
+      net_ret_250m_cop - net_ret_act as net_diff_250m
     from performance.monthly
     where wfcin is not null
     -- legacy. should be removed later!
