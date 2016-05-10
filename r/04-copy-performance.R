@@ -76,7 +76,6 @@ for (wfcin in wfcinList) { # for (wfcin in wfcinList) { # for (wfcin in (sample_
             } else {
                 addLogEntry(logMessage, "log.txt")
             }
-
             next()
         }
 
