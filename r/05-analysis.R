@@ -16,7 +16,7 @@ decileMeans <- getDecileMeans()
 decileAlphas <- getDecileAlphas()
 
 
-# write analysis resuts to file
+# write analysis resuts to file not to lose it
 save.image(file = "analysis-results.RData")
 
 
@@ -27,10 +27,7 @@ save.image(file = "analysis-results.RData")
 # clearAlphaDecilesCache()
 
 
-
-
-
-# create tables
+# create parts of latex tables
 createTable(decileMeans, decileAlphas)
 
 
@@ -38,13 +35,9 @@ createTable(decileMeans, decileAlphas)
 
 
 
-
-
-
-
-
-
-#dbDisconnect(con); rm(list = ls())
+# disconnect from database and remove all vairbales. This is needed for testing
+# purposes to make a clean run.
+# dbDisconnect(con); rm(list = ls())
 
 
 

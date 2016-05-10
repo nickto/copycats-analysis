@@ -713,6 +713,7 @@ getDecileAlphas <- function() {
 
 
 createTable <- function(decileMeans, decileAlphas) {
+    # This function creates tabularx tables for latex.
 
     # --------------------------------------------------------------------------
     # Define local functions
@@ -726,6 +727,9 @@ createTable <- function(decileMeans, decileAlphas) {
         # each element corresponds to the layout of the table in latex.
 
         getPanel <- function(measure) {
+            # This function creates data tabels with the same layout as
+            # desired in tables in latex.
+
             panel <- data.table(
                 decile        = decileData$`10`[[decileBy]][[measure]]$decile,
                 grossRetPrim  = decileData$`10`[[decileBy]][[measure]]$gross_ret_act,
@@ -787,6 +791,8 @@ createTable <- function(decileMeans, decileAlphas) {
     }
 
     writePanel <- function(outputFileName, decileData, panelCaption, measure) {
+        # This function writes a panles to the tex file.
+
         # Add panel name to a file
         panelNameString <- paste0(
             "\t\t\\midrule\n\t\t\\mc{11}{l}{\\scriptsize{\\textit{\\quad ",
