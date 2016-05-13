@@ -42,15 +42,14 @@ dbSendQuery(con, sql_command)
 
 # Loop through all funds
 # is needed for random sampling. Does not affect anything if run on whole sample
-# set.seed(1612)
-# sampleSize <- 300
+set.seed(1036)
+sampleSize <- 300
 
 fundNo <- 0
 # for whole sample:
 # for (wfcin in wfcinList) {
 # for random sample:
-# for (wfcin in (sample_n(as.data.frame(wfcinList), sampleSize))[,1]) {
-for (wfcin in wfcinList) {
+for (wfcin in (sample_n(as.data.frame(wfcinList), sampleSize))[,1]) {
     # start log message for this fund
     logMessage <- paste(
             paste0(inc(fundNo), ":"),

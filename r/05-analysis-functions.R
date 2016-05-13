@@ -2,40 +2,727 @@ inc <- function(x, n = 1){
   eval.parent(substitute(x <- x + n))
 }
 
+getFamaFactors <- function() {
+    # Get monthly Fama French factors.
+
+    sql_command <- paste0("
+    select
+      date_part('year', dateff) as year,
+      date_part('month', dateff) as month,
+      mktrf,
+      smb,
+      hml,
+      rf,
+      umd
+    from factors.monthly
+    ")
+
+    ff <- as.data.table(dbGetQuery(con, sql_command))
+
+    return(ff)
+}
+
+trimLongDataFrame <- function(df, trim = c(1,100)) {
+    df <- tmp
+
+    df[, percentile := ntile(value, 100), by = variable]
+    df[percentile %in% trim, value := NA]
+    df[, percentile := NULL]
+
+    return(df)
+}
+
+getFundLevelAlphas <- function(returns, ff) {
+
+    # --------------------------------------------------------------------------
+    # function for regression
+        getAlphaStatitstic <- function(col, ff) {
+            fm <- lm(col ~ rf + mktrf + smb + hml + umd, data = ff)
+            se <- coeftest(fm, NeweyWest(fm))
+
+            result <- list(
+                alpha <- se[1,1],
+                tstat <- se[1,3],
+                pvalue <- se[1,4]
+            )
+
+            return(result)
+        }
+    # --------------------------------------------------------------------------
+
+    wfcinList <- unique(returns[, wfcin])
+
+    statList <- list()
+    iWfcin <- 0
+    for(wfcinCur in wfcinList) {
+        # get data on current fund
+        wfcinReturns <- returns[wfcin == wfcinCur,]
+        wfcinFF <- ff[
+            paste(year, month) %in% unique(wfcinReturns[, paste(year, month)])
+        ]
+        setkey(wfcinReturns, year, month)
+        setkey(wfcinFF, year, month)
+
+        # regress each column in the data table for current fund
+        statistics <- try(
+            wfcinReturns[,
+                lapply(.SD, getAlphaStatitstic, wfcinFF),
+                .SDcols = -c("year",
+                             "month",
+                             "caldt",
+                             "wfcin",
+                             "m_exp",
+                             "costs_10m_cop",
+                             "costs_50m_cop",
+                             "costs_250m_cop")
+            ],
+            silent = TRUE
+        )
+
+        if(is.data.table(statistics)) {
+            # exitted with no errors
+            # add names
+            statistics[, type := c("alpha", "tstat", "pvalue")]
+            statistics[, wfcin := wfcinCur]
+
+            statList[[inc(iWfcin)]] <- statistics
+        }
+    }
+
+    alphas <- rbindlist(statList)
+
+    # make columns vectors instead of lists
+    for(i in 1:ncol(alphas)) {
+        alphas[, i] <- unlist(alphas[, i, with = FALSE])
+    }
+
+    return(alphas)
+}
+
+addDiffs <- function(returns) {
+    returns[, gross_ret_diff := gross_ret_cop - gross_ret_act]
+    returns[, atc_ret_10m_diff := atc_ret_10m_cop - gross_ret_act]
+    returns[, atc_ret_50m_diff := atc_ret_50m_cop - gross_ret_act]
+    returns[, atc_ret_250m_diff := atc_ret_250m_cop - gross_ret_act]
+    returns[, net_ret_10m_diff := net_ret_10m_cop - net_ret_act]
+    returns[, net_ret_50m_diff := net_ret_50m_cop - net_ret_act]
+    returns[, net_ret_250m_diff := net_ret_250m_cop - net_ret_act]
+
+    return(returns)
+}
+
+getFundLevelStatistics <- function() {
+    sql_command <- paste0("
+    select
+      *
+    from performance.monthly
+    ")
+    wholeSample <- as.data.table(dbGetQuery(con, sql_command))
+    wholeSample <- addDiffs(wholeSample)
+
+    ss <- list()
+    # mean
+    ss$mean <- wholeSample[,
+        lapply(.SD, mean, na.rm = TRUE),
+        .SDcols = -c("year", "month", "caldt"),
+        by = "wfcin"
+    ]
+    # median
+    ss$median <- wholeSample[,
+        lapply(.SD, median, na.rm = TRUE),
+        .SDcols = -c("year", "month", "caldt"),
+        by = "wfcin"
+    ]
+
+    # alphas
+    ff <- getFamaFactors()
+    ss$alpha <- getFundLevelAlphas(wholeSample, ff)
+
+    ss$mean <- addDiffs(ss$mean)
+    ss$alpha <- addDiffs(ss$alpha)
+
+    return(ss)
+}
+
+getStatsAcrossFundsFirst <- function(ss) {
+
+    resultList <- list()
+    resultRow <- 0
+    # Returns
+    # Returns
+    for(varName in c("gross_ret_act",
+                     "gross_ret_cop",
+                     "atc_ret_10m_cop",
+                     "atc_ret_50m_cop",
+                     "atc_ret_250m_cop",
+                     "net_ret_act",
+                     "net_ret_10m_cop",
+                     "net_ret_50m_cop",
+                     "net_ret_250m_cop")) {
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  varName,
+            mean =      mean(ss$mean[, get(varName)], na.rm = TRUE),
+            std =       sd(ss$mean[, get(varName)], na.rm = TRUE),
+            tstat =     t.test(ss$mean[, get(varName)], na.rm = TRUE)$statistic,
+            tstatP =    t.test(ss$mean[, get(varName)], na.rm = TRUE)$p.value,
+            q1 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[2],
+            q2 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[3],
+            q3 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[4],
+            wilcoxonP = as.numeric(NA)
+        )
+    }
+
+    # differences
+    varNames <- cbind(
+        c("gross_ret_diff",
+          "atc_ret_10m_diff",
+          "atc_ret_50m_diff",
+          "atc_ret_250m_diff",
+          "net_ret_10m_diff",
+          "net_ret_50m_diff",
+          "net_ret_250m_diff"),
+        c("gross_ret_cop",
+          "atc_ret_10m_cop",
+          "atc_ret_50m_cop",
+          "atc_ret_250m_cop",
+          "net_ret_10m_cop",
+          "net_ret_50m_cop",
+          "net_ret_250m_cop"),
+        c("gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "net_ret_act",
+          "net_ret_act",
+          "net_ret_act")
+    )
+    for(i in 1:nrow(varNames)) {
+        curRow <- varNames[i,]
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  curRow[1],
+            mean = mean(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE),
+            std = sd(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE),
+            tstat = t.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$statistic,
+            tstatP = t.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$p.value,
+            q1 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[2],
+            q2 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[3],
+            q3 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[4],
+            wilcoxonP = wilcox.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$p.value
+        )
+    }
+
+    # Alphas
+    # Returns
+    for(varName in c("gross_ret_act",
+                     "gross_ret_cop",
+                     "atc_ret_10m_cop",
+                     "atc_ret_50m_cop",
+                     "atc_ret_250m_cop",
+                     "net_ret_act",
+                     "net_ret_10m_cop",
+                     "net_ret_50m_cop",
+                     "net_ret_250m_cop")) {
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  varName,
+            mean =      mean(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE),
+            std =       sd(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE),
+            tstat =     t.test(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE)$statistic,
+            tstatP =    t.test(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE)$p.value,
+            q1 =        fivenum(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE)[2],
+            q2 =        fivenum(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE)[3],
+            q3 =        fivenum(ss$alpha[type == "alpha", get(varName)], na.rm = TRUE)[4],
+            wilcoxonP = as.numeric(NA)
+        )
+    }
+
+    # differences
+    varNames <- cbind(
+        c("gross_ret_diff",
+          "atc_ret_10m_diff",
+          "atc_ret_50m_diff",
+          "atc_ret_250m_diff",
+          "net_ret_10m_diff",
+          "net_ret_50m_diff",
+          "net_ret_250m_diff"),
+        c("gross_ret_cop",
+          "atc_ret_10m_cop",
+          "atc_ret_50m_cop",
+          "atc_ret_250m_cop",
+          "net_ret_10m_cop",
+          "net_ret_50m_cop",
+          "net_ret_250m_cop"),
+        c("gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "net_ret_act",
+          "net_ret_act",
+          "net_ret_act")
+    )
+    for(i in 1:nrow(varNames)) {
+        curRow <- varNames[i,]
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  curRow[1],
+            mean = mean(
+                ss$alpha[type == "alpha", get(curRow[2])] - ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE),
+            std = sd(
+                ss$alpha[type == "alpha", get(curRow[2])] - ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE),
+            tstat = t.test(
+                ss$alpha[type == "alpha", get(curRow[2])], ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)$statistic,
+            tstatP = t.test(
+                ss$alpha[type == "alpha", get(curRow[2])], ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)$p.value,
+            q1 = fivenum(
+                ss$alpha[type == "alpha", get(curRow[2])] - ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)[2],
+            q2 = fivenum(
+                ss$alpha[type == "alpha", get(curRow[2])] - ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)[3],
+            q3 = fivenum(
+                ss$alpha[type == "alpha", get(curRow[2])] - ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)[4],
+            wilcoxonP = wilcox.test(
+                ss$alpha[type == "alpha", get(curRow[2])], ss$alpha[type == "alpha", get(curRow[3])],
+                na.rm = TRUE)$p.value
+        )
+    }
+
+
+
+
+
+
+
+
+
+
+    df <- (rbindlist(resultList))
+    latex(
+        df,
+        file = "test.tex",
+        label = "tab:test-label",
+        rgroup = c("Return", "Return difference", "Carhart Alpha", "Carhart Alpha difference"),
+        n.rgroup = c(9, 7, 9, 7),
+        na.blank = TRUE,
+        rowname = NULL,
+        colheads = c("", "Mean", "St. dev.","T-stat", "p-value", "25", "50", "75", "Wilcoxon"),
+        booktabs = TRUE,
+        #dcolumn = TRUE,
+        dec = 3
+
+
+    )
+
+
+
+
+    xtable(
+        x = df,
+        digits = 3
+    )
+
+
+}
+
+createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
+    ciAbove <- function(x, na.rm = TRUE, ...) {
+        t <- t.test(x, na.rm = na.rm, ...)
+        return(t$conf.int[2])
+    }
+    ciBelow <- function(x, na.rm = TRUE, ...) {
+        t <- t.test(x, na.rm = na.rm, ...)
+        return(t$conf.int[1])
+    }
+
+    # Average returns
+    meanReturnsLong <- melt(
+        ss$mean,
+        id.vars = c("wfcin"),
+        measure.vars = c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop")
+    )
+    gMeans <- ggplot(meanReturnsLong, aes (x = variable, y = value)) +
+        scale_x_discrete(
+            breaks=c("gross_ret_act",
+                     "atc_ret_10m_cop",
+                     "atc_ret_50m_cop",
+                     "atc_ret_250m_cop",
+                     "net_ret_act",
+                     "net_ret_10m_cop",
+                     "net_ret_50m_cop",
+                     "net_ret_250m_cop"),
+            labels=c("ATC\nprimitive",
+                     "ATC\ncopycat\n(10M)",
+                     "ATC\ncopycat\n(50M)",
+                     "ATC\ncopycat\n(250M)",
+                     "Net\nprimitive",
+                     "Net\ncopycat\n(10M)",
+                     "Net\ncopycat\n(50M)",
+                     "Net\ncopycat\n(250M)")
+        ) +
+        ylab("Average return") +
+        #xlab("Return type") +
+        theme(axis.title.x = element_blank()) +
+        scale_y_continuous(
+            labels = percent,
+            limits = c(-0.005, + 0.015)) +
+        # geom_point(
+        #     position = position_jitter(width = 0.9),
+        #     size = 0.1,
+        #     alpha = 0.3) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            alpha = 0.75) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            fill = NA) +
+        stat_boxplot(geom = "errorbar") +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = ciBelow,
+            fun.ymax = ciAbove,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            linetype = "dashed",
+            show.legend = FALSE,
+            na.rm = TRUE
+        ) +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = mean,
+            fun.ymax = mean,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            #size = 1,
+            linetype = "solid",
+            show.legend = FALSE,
+            na.rm = TRUE
+        )
+
+    tikz(file = 'latex/figures_means_boxplots.tikz',
+         sanitize = TRUE,
+         width = widthCm / 2.54,
+         height=  heightCm / 2.54)
+    plot(gMeans)
+    dev.off()
+
+    # Alphas of returns
+    alphasReturnsLong <- melt(
+        ss$alpha[type == "alpha", ],
+        id.vars = c("wfcin"),
+        measure.vars = c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop")
+    )
+
+    gAlphas <- ggplot(alphasReturnsLong, aes (x = variable, y = value)) +
+        scale_x_discrete(
+            breaks=c("gross_ret_act",
+                     "atc_ret_10m_cop",
+                     "atc_ret_50m_cop",
+                     "atc_ret_250m_cop",
+                     "net_ret_act",
+                     "net_ret_10m_cop",
+                     "net_ret_50m_cop",
+                     "net_ret_250m_cop"),
+            labels=c("ATC\nprimitive",
+                     "ATC\ncopycat\n(10M)",
+                     "ATC\ncopycat\n(50M)",
+                     "ATC\ncopycat\n(250M)",
+                     "Net\nprimitive",
+                     "Net\ncopycat\n(10M)",
+                     "Net\ncopycat\n(50M)",
+                     "Net\ncopycat\n(250M)")
+        ) +
+        scale_y_continuous(
+            labels = percent,
+            limits = c(-0.0075, + 0.0075)) +
+        ylab("Carhart alpha") +
+        #xlab("Return type") +
+        theme(axis.title.x = element_blank()) +
+        # geom_point(
+        #     position = position_jitter(width = 0.9),
+        #     size = 0.1,
+        #     alpha = 0.3) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            alpha = 0.75) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            fill = NA) +
+        stat_boxplot(geom = "errorbar") +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = ciBelow,
+            fun.ymax = ciAbove,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            linetype = "dashed",
+            show.legend = FALSE,
+            na.rm = TRUE
+        ) +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = mean,
+            fun.ymax = mean,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            #size = 1,
+            linetype = "solid",
+            show.legend = FALSE,
+            na.rm = TRUE
+        )
+
+    tikz(file = 'latex/figures_alphas_boxplots.tikz',
+         sanitize = TRUE,
+         width = widthCm / 2.54,
+         height=  heightCm / 2.54)
+    plot(gAlphas)
+    dev.off()
+
+
+
+    # Differences in average returns
+    meanDiffsLong <- melt(
+        ss$mean,
+        id.vars = c("wfcin"),
+        measure.vars = c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff")
+    )
+
+    gMeanDiffs <- ggplot(meanDiffsLong, aes (x = variable, y = value)) +
+        scale_x_discrete(
+            breaks=c("atc_ret_10m_diff",
+                     "atc_ret_50m_diff",
+                     "atc_ret_250m_diff",
+                     "net_ret_10m_diff",
+                     "net_ret_50m_diff",
+                     "net_ret_250m_diff"),
+            labels=c("ATC\n(10M)",
+                     "ATC\n(50M)",
+                     "ATC\n(250M)",
+                     "Net\n(10M)",
+                     "Net\n(50M)",
+                     "Net\n(250M)")
+        ) +
+        scale_y_continuous(
+            labels = percent,
+            limits = c(-0.004, + 0.006)) +
+        ylab("Average return difference") +
+        #xlab("Return type") +
+        theme(axis.title.x = element_blank()) +
+        # geom_point(
+        #     position = position_jitter(width = 0.9),
+        #     size = 0.1,
+        #     alpha = 0.3) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            alpha = 0.75) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            fill = NA) +
+        stat_boxplot(geom = "errorbar") +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = ciBelow,
+            fun.ymax = ciAbove,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            linetype = "dashed",
+            show.legend = FALSE,
+            na.rm = TRUE
+        ) +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = mean,
+            fun.ymax = mean,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            #size = 1,
+            linetype = "solid",
+            show.legend = FALSE,
+            na.rm = TRUE
+        )
+
+    tikz(file = 'latex/figures_means_diff_boxplots.tikz',
+         sanitize = TRUE,
+         width = widthCm / 2.54,
+         height=  heightCm / 2.54)
+    plot(gMeanDiffs)
+    dev.off()
+
+
+    # Differences in alphas
+    alphaDiffsLong <- melt(
+        ss$alpha[type == "alpha"],
+        id.vars = c("wfcin"),
+        measure.vars = c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff")
+    )
+
+    gAlphaDiffs <- ggplot(alphaDiffsLong, aes (x = variable, y = value)) +
+        scale_x_discrete(
+            breaks=c("atc_ret_10m_diff",
+                     "atc_ret_50m_diff",
+                     "atc_ret_250m_diff",
+                     "net_ret_10m_diff",
+                     "net_ret_50m_diff",
+                     "net_ret_250m_diff"),
+            labels=c("ATC\n(10M)",
+                     "ATC\n(50M)",
+                     "ATC\n(250M)",
+                     "Net\n(10M)",
+                     "Net\n(50M)",
+                     "Net\n(250M)")
+        ) +
+        scale_y_continuous(
+            labels = percent,
+            limits = c(-0.0065, + 0.007)) +
+        ylab("Average alpha difference") +
+        #xlab("Return type") +
+        theme(axis.title.x = element_blank()) +
+        # geom_point(
+        #     position = position_jitter(width = 0.9),
+        #     size = 0.1,
+        #     alpha = 0.3) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            alpha = 0.75) +
+        geom_boxplot(
+            na.rm = TRUE,
+            notch = TRUE,
+            outlier.shape = NA,
+            fill = NA) +
+        stat_boxplot(geom = "errorbar") +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = ciBelow,
+            fun.ymax = ciAbove,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            linetype = "dashed",
+            show.legend = FALSE,
+            na.rm = TRUE
+        ) +
+        stat_summary(
+            fun.y = mean,
+            fun.ymin = mean,
+            fun.ymax = mean,
+            colour = "darkred",
+            geom = "errorbar",
+            width = 0.95,
+            #size = 1,
+            linetype = "solid",
+            show.legend = FALSE,
+            na.rm = TRUE
+        )
+
+    tikz(file = 'latex/figures_alphas_diff_boxplots.tikz',
+         sanitize = TRUE,
+         width = widthCm / 2.54,
+         height=  heightCm / 2.54)
+    plot(gAlphaDiffs)
+    dev.off()
+
+    return(TRUE)
+}
+
+
+
 getCopycatPerformanceWholeSample <- function() {
 # This function returns a data table that compares means of primitive funds and
 # copycats. It also contains t-statistics and p-values.
 
     sql_command <- paste0("
     select
-      --net_ret_act as primitive_gross,
-      --gross_ret_act as primitive_net,
-      --gross_ret_cop as copycat_gross,
-      --net_ret_10m_cop as copycat_net_10m,
-      --net_ret_50m_cop as copycat_net_50m,
-      --net_ret_250m_cop as copycat_net_250m,
-      --atc_ret_10m_cop as copycat_net_10m,
-      --atc_ret_50m_cop as copycat_net_50m,
-      --atc_ret_250m_cop as copycat_net_250m,
-      gross_ret_cop - net_ret_act as gross_diff,
-      atc_ret_10m_cop - net_ret_act as atc_diff_10m,
-      atc_ret_50m_cop - net_ret_act as atc_diff_50m,
-      atc_ret_250m_cop - net_ret_act as atc_diff_250m,
+      gross_ret_act as primitive_gross,
+      gross_ret_cop as copycat_gross,
+      gross_ret_cop - gross_ret_act as gross_diff,
+      net_ret_act as primitive_net,
+      atc_ret_10m_cop as copycat_atc_10m,
+      atc_ret_50m_cop as copycat_atc_50m,
+      atc_ret_250m_cop as copycat_atc_250m,
+      atc_ret_10m_cop - gross_ret_act as atc_diff_10m,
+      atc_ret_50m_cop - gross_ret_act as atc_diff_50m,
+      atc_ret_250m_cop - gross_ret_act as atc_diff_250m,
+      net_ret_10m_cop as copycat_net_10m,
+      net_ret_50m_cop as copycat_net_50m,
+      net_ret_250m_cop as copycat_net_250m,
       net_ret_10m_cop - net_ret_act as net_diff_10m,
       net_ret_50m_cop - net_ret_act as net_diff_50m,
       net_ret_250m_cop - net_ret_act as net_diff_250m
     from performance.monthly
     where wfcin is not null
     -- legacy. should be removed later!
-    and m_exp >= 0
+    --and m_exp >= 0
     ")
     wholeSampleDiffs <- as.data.table(dbGetQuery(con, sql_command))
 
     diffList <- list()
     for(i in 1:dim(wholeSampleDiffs)[2]) {
         t <- t.test(wholeSampleDiffs[, i, with = FALSE], alternative = "two.sided")
+
         diffList[[i]] <- data.table(
-            diff = names(wholeSampleDiffs)[i],
+            perf_measure = names(wholeSampleDiffs)[i],
             estimate = t$estimate,
             statistic = t$statistic,
             p.value = t$p.value
@@ -46,6 +733,57 @@ getCopycatPerformanceWholeSample <- function() {
     return(performanceComparison)
 }
 
+getMonthlyAverages <- function(conf = 0.95) {
+# This function returns a data table that compares means of primitive funds and
+# copycats. It also contains t-statistics and p-values.
+
+    sql_command <- paste0("
+    select
+      year,
+      month,
+      gross_ret_act as primitive_gross,
+      gross_ret_cop as copycat_gross,
+      gross_ret_cop - gross_ret_act as gross_diff,
+      net_ret_act as primitive_net,
+      atc_ret_10m_cop as copycat_atc_10m,
+      atc_ret_50m_cop as copycat_atc_50m,
+      atc_ret_250m_cop as copycat_atc_250m,
+      atc_ret_10m_cop - gross_ret_act as atc_diff_10m,
+      atc_ret_50m_cop - gross_ret_act as atc_diff_50m,
+      atc_ret_250m_cop - gross_ret_act as atc_diff_250m,
+      net_ret_10m_cop as copycat_net_10m,
+      net_ret_50m_cop as copycat_net_50m,
+      net_ret_250m_cop as copycat_net_250m,
+      net_ret_10m_cop - net_ret_act as net_diff_10m,
+      net_ret_50m_cop - net_ret_act as net_diff_50m,
+      net_ret_250m_cop - net_ret_act as net_diff_250m
+    from performance.monthly
+    where wfcin is not null
+    -- legacy. should be removed later!
+    --and m_exp >= 0
+    ")
+    fundLevel <- as.data.table(dbGetQuery(con, sql_command))
+
+    #monthly <- monthly[, lapply(.SD, mean, na.rm = TRUE), by = list(year, month)]
+
+    setkey(fundLevel, year, month)
+
+    ts <- list()
+    for(i in 3:dim(fundLevel)[2]) {
+        cur <- fundLevel[,c(1,2,i), with = FALSE]
+        curName <- names(cur)[3]
+
+        print(i)
+
+        ts[[i-2]] <- cur[,
+            t.test(get(curName), conf.level = conf),
+            by = list(year, month)
+        ]
+    }
+
+    return(ts)
+}
+
 getCopycatPerformanceByYear <- function() {
 # This function returns a data table that compares means of primitive funds and
 # copycats by year. Unlike getCopycatPerformanceWholeSample it does not return
@@ -54,26 +792,26 @@ getCopycatPerformanceByYear <- function() {
     sql_command <- paste0("
     select
       year,
-      avg(net_ret_act) as primitive_gross,
-      avg(gross_ret_act) as primitive_net,
+      avg(gross_ret_act) as primitive_gross,
+      avg(net_ret_act) as primitive_net,
       avg(gross_ret_cop) as copycat_gross,
       avg(net_ret_10m_cop) as copycat_net_10m,
       avg(net_ret_50m_cop) as copycat_net_50m,
       avg(net_ret_250m_cop) as copycat_net_250m,
-      avg(atc_ret_10m_cop) as copycat_net_10m,
-      avg(atc_ret_50m_cop) as copycat_net_50m,
-      avg(atc_ret_250m_cop) as copycat_net_250m,
+      avg(atc_ret_10m_cop) as copycat_atc_10m,
+      avg(atc_ret_50m_cop) as copycat_atc_50m,
+      avg(atc_ret_250m_cop) as copycat_atc_250m,
       avg(gross_ret_cop) - avg(gross_ret_act) as gross_diff,
-      avg(atc_ret_10m_cop) - avg(net_ret_act) as atc_diff_10m,
-      avg(atc_ret_50m_cop) - avg(net_ret_act) as atc_diff_50m,
-      avg(atc_ret_250m_cop) - avg(net_ret_act) as atc_diff_250m,
+      avg(atc_ret_10m_cop) - avg(gross_ret_act) as atc_diff_10m,
+      avg(atc_ret_50m_cop) - avg(gross_ret_act) as atc_diff_50m,
+      avg(atc_ret_250m_cop) - avg(gross_ret_act) as atc_diff_250m,
       avg(net_ret_10m_cop) - avg(net_ret_act) as net_diff_10m,
       avg(net_ret_50m_cop) - avg(net_ret_act) as net_diff_50m,
       avg(net_ret_250m_cop) - avg(net_ret_act) as net_diff_250m
     from performance.monthly
     where wfcin is not null
     -- legacy. should be removed later!
-    and m_exp >= 0
+    -- and m_exp >= 0
     group by year
     order by year
     ")
@@ -111,7 +849,7 @@ extractDecileData <- function(size) {
           date_part('month', p.caldt) = date_part('month', f.dateff)
         where wfcin is not null
         -- legacy. should be removed later!
-        and m_exp >= 0
+        -- and m_exp >= 0
       ),
       performance_w_excess_returns as (
         select
@@ -172,7 +910,7 @@ extractDecileData <- function(size) {
             atc_ret_", size, "m_cop as atc_ret_cop,
             net_ret_", size, "m_cop as net_ret_cop,
             gross_ret_cop - gross_ret_act as gross_diff,
-            atc_ret_", size, "m_cop - net_ret_act as atc_ret_diff,
+            atc_ret_", size, "m_cop - gtoss_ret_act as atc_ret_diff,
             net_ret_", size, "m_cop - net_ret_act as net_ret_diff,
             last_12m_gross_sr_act as gross_sr_act,
             last_12m_net_sr_act as net_sr_act,
@@ -330,7 +1068,7 @@ extractFundAndFactorsData <- function(size) {
           date_part('month', p.caldt) = date_part('month', f.dateff)
         where wfcin is not null
         -- bodge
-        and m_exp >= 0
+        -- and m_exp >= 0
     ")
     return(as.data.table(dbGetQuery(con, sql_command)))
 }
@@ -544,14 +1282,18 @@ getDecileMeans <- function() {
                             "net_ret_act",
                             "gross_ret_cop",
                             "atc_ret_cop",
-                            "net_ret_cop",
-                            "gross_diff",
-                            "atc_ret_diff",
-                            "net_ret_diff",
-                            "gross_sr_act",
-                            "net_sr_act",
-                            "net_sr_cop",
-                            "net_sr_diff")
+                            "net_ret_cop")
+    dependentVariablesDiffs <- cbind(
+        c("gross_diff",
+          "atc_ret_diff",
+          "net_ret_diff"),
+        c("gross_ret_cop",
+          "atc_ret_cop",
+          "net_ret_cop"),
+        c("gross_ret_act",
+          "gross_ret_act",
+          "net_ret_act")
+    )
 
     means <- list()
     for(size in c(10,50,250)) {
@@ -581,6 +1323,8 @@ getDecileMeans <- function() {
 
                 # means for deciles 1 to 10
                 data <- list()
+                dataCop <- list()
+                dataAct <- list()
                 for(decile in 1:10) {
                     # decile <- 2
 
@@ -598,16 +1342,71 @@ getDecileMeans <- function() {
                 }
 
                 # means fore decile 1 minus decile 10
-                dataD1MinusD10 <- data[[1]]
-                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+                dataD1MinusD10 <- merge(
+                    data[[1]],
+                    data[[10]],
+                    by = c("year", "month"),
+                    suffixes = c("1", "10")
+                )
 
-                tTest <- t.test(dataD1MinusD10[, monthMean])
+                t1Test <- t.test(dataD1MinusD10[, monthMean1 - monthMean10], na.rm = TRUE)
+                t2Test <- t.test(dataD1MinusD10[, monthMean1], dataD1MinusD10[, monthMean10], na.rm = TRUE)
 
-                means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
-                means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
-                means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
+                means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := t1Test$estimate]
+                means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := t2Test$statistic]
+                means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := t2Test$p.value]
+            }
+
+            for(i in 1:nrow(dependentVariablesDiffs)) {
+                # i <- 1
+                varName <- dependentVariablesDiffs[i,1]
+                copName <- dependentVariablesDiffs[i,2]
+                actName <- dependentVariablesDiffs[i,3]
+
+                # means for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(copName) - get(actName), na.rm =TRUE)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+                    dataCop[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(copName), na.rm =TRUE)
+                        ), by = list(year, month)]
+                    setkey(dataCop[[decile]], year, month)
+                    dataAct[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(actName), na.rm =TRUE)
+                        ), by = list(year, month)]
+                    setkey(dataAct[[decile]], year, month)
+
+                    t1Test <- t.test(data[[decile]][, monthMean])
+                    t2Test <- t.test(dataCop[[decile]][, monthMean], dataAct[[decile]][, monthMean])
+
+                    means[[as.character(size)]][[decileName]][["mean"]][decile, (varName) := t1Test$estimate]
+                    means[[as.character(size)]][[decileName]][["tstat"]][decile, (varName) := t2Test$statistic]
+                    means[[as.character(size)]][[decileName]][["pvalue"]][decile, (varName) := t2Test$p.value]
+                }
+
+                # means fore decile 1 minus decile 10
+                dataD1MinusD10 <- merge(
+                    data[[1]],
+                    data[[10]],
+                    by = c("year", "month"),
+                    suffixes = c("1", "10")
+                )
+
+                t1Test <- t.test(dataD1MinusD10[, monthMean1 - monthMean10], na.rm = TRUE)
+                t2Test <- t.test(dataD1MinusD10[, monthMean1], dataD1MinusD10[, monthMean10], na.rm = TRUE)
+
+                means[[as.character(size)]][[decileName]][["mean"]][11, (varName) := t1Test$estimate]
+                means[[as.character(size)]][[decileName]][["tstat"]][11, (varName) := t2Test$statistic]
+                means[[as.character(size)]][[decileName]][["pvalue"]][11, (varName) := t2Test$p.value]
             }
         }
+
     }
 
     return(means)
@@ -632,14 +1431,18 @@ getDecileAlphas <- function() {
                             "net_ret_act",
                             "gross_ret_cop",
                             "atc_ret_cop",
-                            "net_ret_cop",
-                            "gross_diff",
-                            "atc_ret_diff",
-                            "net_ret_diff",
-                            "gross_sr_act",
-                            "net_sr_act",
-                            "net_sr_cop",
-                            "net_sr_diff")
+                            "net_ret_cop")
+    dependentVariablesDiffs <- cbind(
+        c("gross_diff",
+          "atc_ret_diff",
+          "net_ret_diff"),
+        c("gross_ret_cop",
+          "atc_ret_cop",
+          "net_ret_cop"),
+        c("gross_ret_act",
+          "gross_ret_act",
+          "net_ret_act")
+    )
 
     alphas <- list()
     for(size in c(10,50,250)) {
@@ -669,13 +1472,15 @@ getDecileAlphas <- function() {
 
                 # alphas for deciles 1 to 10
                 data <- list()
+                dataCop <- list()
+                dataAct <- list()
                 for(decile in 1:10) {
                     # decile <- 2
 
                     # get data for the current decile (averages)
                     data[[decile]] <- decileData[get(decileName) == decile, list(
                             monthMean = mean(get(dependentVariable), na.rm =TRUE),
-                            mktrf = mean(mktrf),
+                            mktrf = mean(mktrf), # the number is the same, so it is not actually mean
                             smb = mean(smb),
                             hml = mean(hml),
                             rf = mean(rf),
@@ -692,22 +1497,89 @@ getDecileAlphas <- function() {
                 }
 
                 # alphas fore decile 1 minus decile 10
-                dataD1MinusD10 <- data[[1]]
-                dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+                dataD1MinusD10 <- merge(
+                    data[[1]],
+                    data[[10]][, list(month, year, monthMean)],
+                    by = c("year", "month"),
+                    suffixes = c("1", "10")
+                )
 
-                fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
+                fm <- lm((monthMean1 - monthMean10) ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
                 se <- coeftest(fm, NeweyWest(fm, lag = 2))
 
                 alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
                 alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
                 alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
+            }
 
+            for(i in 1:nrow(dependentVariablesDiffs)) {
+                # dependentVariable <- "net_ret_diff"
+                varName <- dependentVariablesDiffs[i,1]
+                copName <- dependentVariablesDiffs[i,2]
+                actName <- dependentVariablesDiffs[i,3]
+
+                # alphas for deciles 1 to 10
+                data <- list()
+                for(decile in 1:10) {
+                    # decile <- 2
+
+                    # get data for the current decile (averages)
+                    data[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(copName) - get(actName), na.rm =TRUE),
+                            mktrf = mean(mktrf), # the number is the same, so it is not actually mean
+                            smb = mean(smb),
+                            hml = mean(hml),
+                            rf = mean(rf),
+                            umd = mean(umd)
+                        ), by = list(year, month)]
+                    setkey(data[[decile]], year, month)
+                    dataCop[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(copName), na.rm =TRUE),
+                            mktrf = mean(mktrf), # the number is the same, so it is not actually mean
+                            smb = mean(smb),
+                            hml = mean(hml),
+                            rf = mean(rf),
+                            umd = mean(umd)
+                        ), by = list(year, month)]
+                    setkey(dataCop[[decile]], year, month)
+                    dataAct[[decile]] <- decileData[get(decileName) == decile, list(
+                            monthMean = mean(get(actName), na.rm =TRUE),
+                            mktrf = mean(mktrf), # the number is the same, so it is not actually mean
+                            smb = mean(smb),
+                            hml = mean(hml),
+                            rf = mean(rf),
+                            umd = mean(umd)
+                        ), by = list(year, month)]
+                    setkey(dataAct[[decile]], year, month)
+
+                    t1Test <- t.test(data[[decile]][, monthMean])
+                    t2Test <- t.test(dataCop[[decile]][, monthMean], dataAct[[decile]][, monthMean])
+
+                    alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (varName) := t1Test$estimate]
+                    alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (varName) := t2Test$statistic]
+                    alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (varName) := t2Test$p.value]
+                }
+
+                 # alphas fore decile 1 minus decile 10
+                dataD1MinusD10 <- merge(
+                    data[[1]],
+                    data[[10]][, list(month, year, monthMean)],
+                    by = c("year", "month"),
+                    suffixes = c("1", "10")
+                )
+
+                fm <- lm((monthMean1 - monthMean10) ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
+                se <- coeftest(fm, NeweyWest(fm, lag = 2))
+
+                alphas[[as.character(size)]][[decileName]][["alpha"]][11, (varName) := se[1,1]]
+                alphas[[as.character(size)]][[decileName]][["tstat"]][11, (varName) := se[1,3]]
+                alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (varName) := se[1,4]]
             }
         }
+
     }
 
     return(alphas)
-
 }
 
 
@@ -732,9 +1604,13 @@ createTable <- function(decileMeans, decileAlphas) {
 
             panel <- data.table(
                 decile        = decileData$`10`[[decileBy]][[measure]]$decile,
-                grossRetPrim  = decileData$`10`[[decileBy]][[measure]]$gross_ret_act,
-                grossRetCopy  = decileData$`10`[[decileBy]][[measure]]$gross_ret_cop,
-                grossRetDiff  = decileData$`10`[[decileBy]][[measure]]$gross_diff,
+                atcRetPrim    = decileData$`10`[[decileBy]][[measure]]$gross_ret_act,
+                atcRetCopy10  = decileData$`10`[[decileBy]][[measure]]$atc_ret_cop,
+                atcRetCopy50  = decileData$`50`[[decileBy]][[measure]]$atc_ret_cop,
+                atcRetCopy250  = decileData$`250`[[decileBy]][[measure]]$atc_ret_cop,
+                atcRetDiff10  = decileData$`10`[[decileBy]][[measure]]$atc_ret_diff,
+                atcRetDiff50  = decileData$`50`[[decileBy]][[measure]]$atc_ret_diff,
+                atcRetDiff250  = decileData$`250`[[decileBy]][[measure]]$atc_ret_diff,
                 netRetPrim    = decileData$`10`[[decileBy]][[measure]]$net_ret_act,
                 netRetCopy10  = decileData$`10`[[decileBy]][[measure]]$net_ret_cop,
                 netRetCopy50  = decileData$`50`[[decileBy]][[measure]]$net_ret_cop,
@@ -767,11 +1643,10 @@ createTable <- function(decileMeans, decileAlphas) {
         if(!tstat) {
             # convert decimal to percentage if nccessary
             if(percent) {
-                stat <- stat * 100
+                stat <- as.numeric(stat * 100)
             }
-
-            statStr <- format(round(stat, roundN), nsmall = roundN)
-            statStr <- paste0("\\num{", statStr ,"}")
+            statStr <- formatC(x = stat, format='f', digits=roundN )
+            statStr <- paste0("\\num{", statStr, "}")
             # add significance asterisks
             if(pvalue <= 0.01) {
                 statStr <- paste0(statStr, "***\\phantom{)}")
@@ -783,9 +1658,11 @@ createTable <- function(decileMeans, decileAlphas) {
                 statStr <- paste0(statStr, "\\phantom{***)}")
             }
         } else {
-            statStr <- format(round(stat, roundN), nsmall = roundN)
+            stat <- as.numeric(stat)
+            statStr <- formatC(x = stat, format='f', digits=roundN )
             statStr <- paste0("(\\num{", statStr, "})\\phantom{***}")
         }
+
 
         return(statStr)
     }
@@ -795,7 +1672,7 @@ createTable <- function(decileMeans, decileAlphas) {
 
         # Add panel name to a file
         panelNameString <- paste0(
-            "\t\t\\midrule\n\t\t\\mc{11}{l}{\\scriptsize{\\textit{\\quad ",
+            "\n\t\t\\midrule\n\t\t\\mc{15}{l}{\\scriptsize{\\textit{\\quad ",
             panelCaption,
             "}}} \\\\[\\panelspacing]",
             sep = ""
@@ -813,7 +1690,7 @@ createTable <- function(decileMeans, decileAlphas) {
                 # statistics and t-statistics)
                 if(col == 1) {
                     # statistics: decile name
-                    if(panel$measure[row, col] == 11) {
+                    if(panel$measure[row, col, with = FALSE] == 11) {
                         # This is a D1-D10 decile
                         statRow <- paste("\t\t\\decilename{D1$-$D10}")
                     } else {
@@ -892,3 +1769,219 @@ createTable <- function(decileMeans, decileAlphas) {
         file.append(outputFileName, fileName2)
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#
+# getDecileMeans <- function() {
+# # This function return mean comparisons (with t-statistic and p-values) for
+# # different decile sorting and different fund sizes. Note that decile 11
+# # means decile 1 minus decile 10.
+# #
+# # The returned object is a list of lists... where the first level indicates
+# # the fund size, the second level indicates which variable the deciles where
+# # sorted, the third level contains difference statistics (means, t-stat etc),
+# # each of this statistics is represented using a data table.
+#
+#     decileNames <- c("primitive_return_decile",
+#                      "net_return_decile",
+#                      "exp_ratio_decile",
+#                      "sr_decile",
+#                      "alphas_decile")
+#     dependentVariables <- c("gross_ret_act",
+#                             "net_ret_act",
+#                             "gross_ret_cop",
+#                             "atc_ret_cop",
+#                             "net_ret_cop",
+#                             "gross_diff",
+#                             "atc_ret_diff",
+#                             "net_ret_diff",
+#                             "gross_sr_act",
+#                             "net_sr_act",
+#                             "net_sr_cop",
+#                             "net_sr_diff")
+#
+#     means <- list()
+#     for(size in c(10,50,250)) {
+#         #size <- 50
+#         decileData <- getDecileData(size)
+#         alphaDeciles <- getAlphaDeciles(size)
+#
+#         decileData <- merge(
+#             decileData,
+#             alphaDeciles[, list(wfcin, year, month, alphas_decile)],
+#             by = c("wfcin", "year", "month")
+#         )
+#
+#         means[[as.character(size)]] <- list()
+#         for(decileName in decileNames) {
+#             # decileName <- "net_return_decile"
+#
+#             means[[as.character(size)]][[decileName]] <- list()
+#
+#             means[[as.character(size)]][[decileName]][["mean"]]  <- data.table(decile = 1:11)
+#             means[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+#             means[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+#
+#
+#             for(dependentVariable in dependentVariables) {
+#                 # dependentVariable <- "net_ret_diff"
+#
+#                 # means for deciles 1 to 10
+#                 data <- list()
+#                 for(decile in 1:10) {
+#                     # decile <- 2
+#
+#                     # get data for the current decile (averages)
+#                     data[[decile]] <- decileData[get(decileName) == decile, list(
+#                             monthMean = mean(get(dependentVariable), na.rm =TRUE)
+#                         ), by = list(year, month)]
+#                     setkey(data[[decile]], year, month)
+#
+#                     tTest <- t.test(data[[decile]][, monthMean])
+#
+#                     means[[as.character(size)]][[decileName]][["mean"]][decile, (dependentVariable) := tTest$estimate]
+#                     means[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := tTest$statistic]
+#                     means[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := tTest$p.value]
+#                 }
+#
+#                 # means fore decile 1 minus decile 10
+#                 dataD1MinusD10 <- data[[1]]
+#                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+#
+#                 tTest <- t.test(dataD1MinusD10[, monthMean])
+#
+#                 means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
+#                 means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
+#                 means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
+#             }
+#         }
+#     }
+#
+#     return(means)
+# }
+#
+# getDecileAlphas <- function() {
+# # This function return carhart alphas (with t-statistic and p-values) for
+# # different decile sorting and different fund sizes. Note that decile 11
+# # means decile 1 minus decile 10.
+# #
+# # The returned object is a list of lists of lists, where the first level indicates
+# # the fund size, the second level indicates which variable the deciles where
+# # sorted, the third level contains difference statistics (alphas, t-stat etc),
+# # each of this statistics is represented using a data table.
+#
+#     decileNames <- c("primitive_return_decile",
+#                      "net_return_decile",
+#                      "exp_ratio_decile",
+#                      "sr_decile",
+#                      "alphas_decile")
+#     dependentVariables <- c("gross_ret_act",
+#                             "net_ret_act",
+#                             "gross_ret_cop",
+#                             "atc_ret_cop",
+#                             "net_ret_cop",
+#                             "gross_diff",
+#                             "atc_ret_diff",
+#                             "net_ret_diff",
+#                             "gross_sr_act",
+#                             "net_sr_act",
+#                             "net_sr_cop",
+#                             "net_sr_diff")
+#
+#     alphas <- list()
+#     for(size in c(10,50,250)) {
+#         #size <- 50
+#         decileData <- getDecileData(size)
+#         alphaDeciles <- getAlphaDeciles(size)
+#
+#         decileData <- merge(
+#             decileData,
+#             alphaDeciles[, list(wfcin, year, month, alphas_decile)],
+#             by = c("wfcin", "year", "month")
+#         )
+#
+#         alphas[[as.character(size)]] <- list()
+#         for(decileName in decileNames) {
+#             # decileName <- "net_return_decile"
+#
+#             alphas[[as.character(size)]][[decileName]] <- list()
+#
+#             alphas[[as.character(size)]][[decileName]][["alpha"]]  <- data.table(decile = 1:11)
+#             alphas[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
+#             alphas[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
+#
+#
+#             for(dependentVariable in dependentVariables) {
+#                 # dependentVariable <- "net_ret_diff"
+#
+#                 # alphas for deciles 1 to 10
+#                 data <- list()
+#                 for(decile in 1:10) {
+#                     # decile <- 2
+#
+#                     # get data for the current decile (averages)
+#                     data[[decile]] <- decileData[get(decileName) == decile, list(
+#                             monthMean = mean(get(dependentVariable), na.rm =TRUE),
+#                             mktrf = mean(mktrf),
+#                             smb = mean(smb),
+#                             hml = mean(hml),
+#                             rf = mean(rf),
+#                             umd = mean(umd)
+#                         ), by = list(year, month)]
+#                     setkey(data[[decile]], year, month)
+#
+#                     fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
+#                     se <- coeftest(fm, NeweyWest(fm, lag = 2))
+#
+#                     alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
+#                     alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
+#                     alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := se[1,4]]
+#                 }
+#
+#                 # alphas fore decile 1 minus decile 10
+#                 dataD1MinusD10 <- data[[1]]
+#                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
+#
+#                 fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
+#                 se <- coeftest(fm, NeweyWest(fm, lag = 2))
+#
+#                 alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
+#                 alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
+#                 alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
+#
+#             }
+#         }
+#     }
+#
+#     return(alphas)
+#
+# }
+
+
+
+
+
+
+
+

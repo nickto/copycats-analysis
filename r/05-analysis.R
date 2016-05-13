@@ -27,6 +27,8 @@ save.image(file = "analysis-results.RData")
 # clearAlphaDecilesCache()
 
 
+
+
 # create parts of latex tables
 createTable(decileMeans, decileAlphas)
 
@@ -38,6 +40,18 @@ createTable(decileMeans, decileAlphas)
 # disconnect from database and remove all vairbales. This is needed for testing
 # purposes to make a clean run.
 # dbDisconnect(con); rm(list = ls())
+
+
+ss <- getFundLevelStatistics()
+createPlots(ss)
+
+
+
+
+
+
+source("./r/05-analysis-functions.R")
+tmp <- getMonthlyAverages()
 
 
 

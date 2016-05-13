@@ -1,0 +1,50 @@
+%latex.default(df, file = "test.tex", label = "tab:test-label",     rgroup = c("Return", "Return difference", "Carhart Alpha",         "Carhart Alpha difference"), n.rgroup = c(9, 7, 9, 7),     na.blank = TRUE, rowname = NULL, colheads = c("", "Mean",         "St. dev.", "T-stat", "p-value", "25", "50", "75", "Wilcoxon"),     booktabs = TRUE, dec = 3)%
+\begin{table}[!tbp]
+\begin{center}
+\begin{tabular}{lrrrrrrrr}
+\toprule
+\multicolumn{1}{c}{}&\multicolumn{1}{c}{Mean}&\multicolumn{1}{c}{St. dev.}&\multicolumn{1}{c}{T-stat}&\multicolumn{1}{c}{p-value}&\multicolumn{1}{c}{25}&\multicolumn{1}{c}{50}&\multicolumn{1}{c}{75}&\multicolumn{1}{c}{Wilcoxon}\tabularnewline
+\midrule
+&&&&&&&&\tabularnewline
+gross_ret_act&$ 0.005$&$0.011$&$26.322$&$0.000$&$ 0.003$&$ 0.006$&$0.009$&$$\tabularnewline
+gross_ret_cop&$ 0.006$&$0.009$&$34.039$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+atc_ret_10m_cop&$ 0.005$&$0.010$&$30.454$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+atc_ret_50m_cop&$ 0.005$&$0.010$&$30.451$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+atc_ret_250m_cop&$ 0.005$&$0.010$&$30.438$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+net_ret_act&$ 0.004$&$0.011$&$20.953$&$0.000$&$ 0.002$&$ 0.005$&$0.008$&$$\tabularnewline
+net_ret_10m_cop&$ 0.005$&$0.010$&$29.508$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+net_ret_50m_cop&$ 0.005$&$0.010$&$29.505$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+net_ret_250m_cop&$ 0.005$&$0.010$&$29.493$&$0.000$&$ 0.003$&$ 0.007$&$0.009$&$$\tabularnewline
+\midrule
+&&&&&&&&\tabularnewline
+gross_ret_diff&$ 0.001$&$0.005$&$ 2.520$&$0.012$&$-0.001$&$ 0.000$&$0.002$&$0.004$\tabularnewline
+atc_ret_10m_diff&$ 0.000$&$0.005$&$ 1.554$&$0.120$&$-0.001$&$ 0.000$&$0.001$&$0.032$\tabularnewline
+atc_ret_50m_diff&$ 0.000$&$0.005$&$ 1.552$&$0.121$&$-0.001$&$ 0.000$&$0.001$&$0.032$\tabularnewline
+atc_ret_250m_diff&$ 0.000$&$0.005$&$ 1.544$&$0.123$&$-0.001$&$ 0.000$&$0.001$&$0.033$\tabularnewline
+net_ret_10m_diff&$ 0.001$&$0.005$&$ 4.845$&$0.000$&$ 0.000$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+net_ret_50m_diff&$ 0.001$&$0.005$&$ 4.843$&$0.000$&$ 0.000$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+net_ret_250m_diff&$ 0.001$&$0.005$&$ 4.835$&$0.000$&$ 0.000$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+\midrule
+&&&&&&&&\tabularnewline
+gross_ret_act&$-0.001$&$0.016$&$-4.894$&$0.000$&$-0.003$&$ 0.000$&$0.002$&$$\tabularnewline
+gross_ret_cop&$-0.001$&$0.021$&$-1.890$&$0.059$&$-0.003$&$ 0.000$&$0.002$&$$\tabularnewline
+atc_ret_10m_cop&$-0.001$&$0.022$&$-3.093$&$0.002$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+atc_ret_50m_cop&$-0.001$&$0.022$&$-3.093$&$0.002$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+atc_ret_250m_cop&$-0.001$&$0.022$&$-3.094$&$0.002$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+net_ret_act&$-0.002$&$0.016$&$-8.479$&$0.000$&$-0.004$&$-0.002$&$0.001$&$$\tabularnewline
+net_ret_10m_cop&$-0.001$&$0.022$&$-3.516$&$0.000$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+net_ret_50m_cop&$-0.001$&$0.022$&$-3.516$&$0.000$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+net_ret_250m_cop&$-0.001$&$0.022$&$-3.517$&$0.000$&$-0.004$&$-0.001$&$0.002$&$$\tabularnewline
+\midrule
+&&&&&&&&\tabularnewline
+gross_ret_diff&$ 0.001$&$0.016$&$ 1.476$&$0.140$&$-0.001$&$ 0.000$&$0.002$&$0.000$\tabularnewline
+atc_ret_10m_diff&$ 0.000$&$0.017$&$ 0.340$&$0.734$&$-0.002$&$ 0.000$&$0.002$&$0.750$\tabularnewline
+atc_ret_50m_diff&$ 0.000$&$0.017$&$ 0.340$&$0.734$&$-0.002$&$ 0.000$&$0.002$&$0.750$\tabularnewline
+atc_ret_250m_diff&$ 0.000$&$0.017$&$ 0.338$&$0.736$&$-0.002$&$ 0.000$&$0.002$&$0.746$\tabularnewline
+net_ret_10m_diff&$ 0.001$&$0.017$&$ 2.087$&$0.037$&$-0.001$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+net_ret_50m_diff&$ 0.001$&$0.017$&$ 2.087$&$0.037$&$-0.001$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+net_ret_250m_diff&$ 0.001$&$0.017$&$ 2.084$&$0.037$&$-0.001$&$ 0.001$&$0.002$&$0.000$\tabularnewline
+\bottomrule
+\end{tabular}\end{center}
+
+\end{table}
