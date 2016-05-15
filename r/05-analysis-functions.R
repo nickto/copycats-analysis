@@ -2,6 +2,7 @@ inc <- function(x, n = 1){
   eval.parent(substitute(x <- x + n))
 }
 
+
 getFamaFactors <- function() {
     # Get monthly Fama French factors.
 
@@ -145,7 +146,6 @@ getFundLevelStatistics <- function() {
 }
 
 getStatsAcrossFundsFirst <- function(ss) {
-
     resultList <- list()
     resultRow <- 0
     # Returns
@@ -306,44 +306,957 @@ getStatsAcrossFundsFirst <- function(ss) {
         )
     }
 
+    df <- (rbindlist(resultList))
 
+    # convert to percentages:
+    df[, mean := mean * 100]
+    df[, std := std * 100]
+    df[, q1 := q1 * 100]
+    df[, q2 := q2 * 100]
+    df[, q3 := q3 * 100]
 
+    return(df)
+}
 
+getStatsAcrossMonthsFirst <- function(ss) {
+    resultList <- list()
+    resultRow <- 0
+    # Returns
+    # Returns
+    for(varName in c("gross_ret_act",
+                     "gross_ret_cop",
+                     "atc_ret_10m_cop",
+                     "atc_ret_50m_cop",
+                     "atc_ret_250m_cop",
+                     "net_ret_act",
+                     "net_ret_10m_cop",
+                     "net_ret_50m_cop",
+                     "net_ret_250m_cop")) {
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  varName,
+            mean =      mean(ss$mean[, get(varName)], na.rm = TRUE),
+            std =       sd(ss$mean[, get(varName)], na.rm = TRUE),
+            tstat =     t.test(ss$mean[, get(varName)], na.rm = TRUE)$statistic,
+            tstatP =    t.test(ss$mean[, get(varName)], na.rm = TRUE)$p.value,
+            q1 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[2],
+            q2 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[3],
+            q3 =        fivenum(ss$mean[, get(varName)], na.rm = TRUE)[4],
+            wilcoxonP = as.numeric(NA)
+        )
+    }
 
-
-
-
-
+    # differences
+    varNames <- cbind(
+        c("gross_ret_diff",
+          "atc_ret_10m_diff",
+          "atc_ret_50m_diff",
+          "atc_ret_250m_diff",
+          "net_ret_10m_diff",
+          "net_ret_50m_diff",
+          "net_ret_250m_diff"),
+        c("gross_ret_cop",
+          "atc_ret_10m_cop",
+          "atc_ret_50m_cop",
+          "atc_ret_250m_cop",
+          "net_ret_10m_cop",
+          "net_ret_50m_cop",
+          "net_ret_250m_cop"),
+        c("gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "gross_ret_act",
+          "net_ret_act",
+          "net_ret_act",
+          "net_ret_act")
+    )
+    for(i in 1:nrow(varNames)) {
+        curRow <- varNames[i,]
+        resultList[[inc(resultRow)]] <- data.table(
+            variable =  curRow[1],
+            mean = mean(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE),
+            std = sd(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE),
+            tstat = t.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$statistic,
+            tstatP = t.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$p.value,
+            q1 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[2],
+            q2 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[3],
+            q3 = fivenum(
+                ss$mean[, get(curRow[2])] - ss$mean[, get(curRow[3])],
+                na.rm = TRUE)[4],
+            wilcoxonP = wilcox.test(
+                ss$mean[, get(curRow[2])], ss$mean[, get(curRow[3])],
+                na.rm = TRUE)$p.value
+        )
+    }
 
     df <- (rbindlist(resultList))
-    latex(
-        df,
-        file = "test.tex",
-        label = "tab:test-label",
-        rgroup = c("Return", "Return difference", "Carhart Alpha", "Carhart Alpha difference"),
-        n.rgroup = c(9, 7, 9, 7),
-        na.blank = TRUE,
-        rowname = NULL,
-        colheads = c("", "Mean", "St. dev.","T-stat", "p-value", "25", "50", "75", "Wilcoxon"),
-        booktabs = TRUE,
-        #dcolumn = TRUE,
-        dec = 3
 
+    # convert to percentages:
+    df[, mean := mean * 100]
+    df[, std := std * 100]
+    df[, q1 := q1 * 100]
+    df[, q2 := q2 * 100]
+    df[, q3 := q3 * 100]
 
-    )
+    return(df)
+}
 
+createLatexTablesOfWholeSampleResults <- function(df) {
+    # fileName = "latex/tables_whole_sample.tex"
 
-
+    # latex(
+    #     df,
+    #     file = fileName,
+    #     rgroup = c("Return", "Return difference", "Carhart Alpha", "Carhart Alpha difference"),
+    #     n.rgroup = c(9, 7, 9, 7),
+    #     na.blank = TRUE,
+    #     rowname = NULL,
+    #     colheads = c("", "Mean", "St. dev.","T-stat", "p-value", "25", "50", "75", "Wilcoxon"),
+    #     booktabs = TRUE,
+    #     #dcolumn = TRUE,
+    #     dec = 3
+    # )
 
     xtable(
         x = df,
-        digits = 3
+        digits = 5,
+        booktabs = TRUE
     )
+}
+
+createPlotsAcrossFundsFirst <- function(ss, widthCm = 15, heightCm = 7.75, jitter = FALSE) {
+    ciAbove <- function(x, na.rm = TRUE, ...) {
+        t <- t.test(x, na.rm = na.rm, ...)
+        return(t$conf.int[2])
+    }
+    ciBelow <- function(x, na.rm = TRUE, ...) {
+        t <- t.test(x, na.rm = na.rm, ...)
+        return(t$conf.int[1])
+    }
+
+    if(jitter) {
+        # Average returns
+        meanReturnsLong <- melt(
+            ss$mean,
+            id.vars = c("wfcin"),
+            measure.vars = c("gross_ret_act",
+                             "atc_ret_10m_cop",
+                             "atc_ret_50m_cop",
+                             "atc_ret_250m_cop",
+                             "net_ret_act",
+                             "net_ret_10m_cop",
+                             "net_ret_50m_cop",
+                             "net_ret_250m_cop")
+        )
+        gMeans <- ggplot(meanReturnsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop"),
+                labels=c("ATC\nprimitive",
+                         "ATC\ncopycat\n(10M)",
+                         "ATC\ncopycat\n(50M)",
+                         "ATC\ncopycat\n(250M)",
+                         "Net\nprimitive",
+                         "Net\ncopycat\n(10M)",
+                         "Net\ncopycat\n(50M)",
+                         "Net\ncopycat\n(250M)")
+            ) +
+            ylab("Average return") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.01, +0.02)) +
+            geom_point(
+                position = position_jitter(width = 0.9),
+                size = 0.1,
+                alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_means_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gMeans)
+        dev.off()
+
+        # Alphas of returns
+        alphasReturnsLong <- melt(
+            ss$alpha[type == "alpha", ],
+            id.vars = c("wfcin"),
+            measure.vars = c("gross_ret_act",
+                             "atc_ret_10m_cop",
+                             "atc_ret_50m_cop",
+                             "atc_ret_250m_cop",
+                             "net_ret_act",
+                             "net_ret_10m_cop",
+                             "net_ret_50m_cop",
+                             "net_ret_250m_cop")
+        )
+
+        gAlphas <- ggplot(alphasReturnsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop"),
+                labels=c("ATC\nprimitive",
+                         "ATC\ncopycat\n(10M)",
+                         "ATC\ncopycat\n(50M)",
+                         "ATC\ncopycat\n(250M)",
+                         "Net\nprimitive",
+                         "Net\ncopycat\n(10M)",
+                         "Net\ncopycat\n(50M)",
+                         "Net\ncopycat\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.0125, +0.01)) +
+            ylab("Carhart alpha") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            geom_point(
+                position = position_jitter(width = 0.9),
+                size = 0.1,
+                alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_alphas_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gAlphas)
+        dev.off()
+
+
+
+        # Differences in average returns
+        meanDiffsLong <- melt(
+            ss$mean,
+            id.vars = c("wfcin"),
+            measure.vars = c("atc_ret_10m_diff",
+                             "atc_ret_50m_diff",
+                             "atc_ret_250m_diff",
+                             "net_ret_10m_diff",
+                             "net_ret_50m_diff",
+                             "net_ret_250m_diff")
+        )
+
+        gMeanDiffs <- ggplot(meanDiffsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff"),
+                labels=c("ATC\n(10M)",
+                         "ATC\n(50M)",
+                         "ATC\n(250M)",
+                         "Net\n(10M)",
+                         "Net\n(50M)",
+                         "Net\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.005, +0.007)) +
+            ylab("Average return difference") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            geom_point(
+                position = position_jitter(width = 0.9),
+                size = 0.1,
+                alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_means_diff_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gMeanDiffs)
+        dev.off()
+
+
+        # Differences in alphas
+        alphaDiffsLong <- melt(
+            ss$alpha[type == "alpha"],
+            id.vars = c("wfcin"),
+            measure.vars = c("atc_ret_10m_diff",
+                             "atc_ret_50m_diff",
+                             "atc_ret_250m_diff",
+                             "net_ret_10m_diff",
+                             "net_ret_50m_diff",
+                             "net_ret_250m_diff")
+        )
+
+        gAlphaDiffs <- ggplot(alphaDiffsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff"),
+                labels=c("ATC\n(10M)",
+                         "ATC\n(50M)",
+                         "ATC\n(250M)",
+                         "Net\n(10M)",
+                         "Net\n(50M)",
+                         "Net\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.0075, +0.0075)) +
+            ylab("Average alpha difference") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            geom_point(
+                position = position_jitter(width = 0.9),
+                size = 0.1,
+                alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_alphas_diff_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gAlphaDiffs)
+        dev.off()
+    } else {
+        # Average returns
+        meanReturnsLong <- melt(
+            ss$mean,
+            id.vars = c("wfcin"),
+            measure.vars = c("gross_ret_act",
+                             "atc_ret_10m_cop",
+                             "atc_ret_50m_cop",
+                             "atc_ret_250m_cop",
+                             "net_ret_act",
+                             "net_ret_10m_cop",
+                             "net_ret_50m_cop",
+                             "net_ret_250m_cop")
+        )
+        gMeans <- ggplot(meanReturnsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop"),
+                labels=c("ATC\nprimitive",
+                         "ATC\ncopycat\n(10M)",
+                         "ATC\ncopycat\n(50M)",
+                         "ATC\ncopycat\n(250M)",
+                         "Net\nprimitive",
+                         "Net\ncopycat\n(10M)",
+                         "Net\ncopycat\n(50M)",
+                         "Net\ncopycat\n(250M)")
+            ) +
+            ylab("Average return") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.01, +0.02)) +
+            # geom_point(
+            #     position = position_jitter(width = 0.9),
+            #     size = 0.1,
+            #     alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_means_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gMeans)
+        dev.off()
+
+        # Alphas of returns
+        alphasReturnsLong <- melt(
+            ss$alpha[type == "alpha", ],
+            id.vars = c("wfcin"),
+            measure.vars = c("gross_ret_act",
+                             "atc_ret_10m_cop",
+                             "atc_ret_50m_cop",
+                             "atc_ret_250m_cop",
+                             "net_ret_act",
+                             "net_ret_10m_cop",
+                             "net_ret_50m_cop",
+                             "net_ret_250m_cop")
+        )
+
+        gAlphas <- ggplot(alphasReturnsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("gross_ret_act",
+                         "atc_ret_10m_cop",
+                         "atc_ret_50m_cop",
+                         "atc_ret_250m_cop",
+                         "net_ret_act",
+                         "net_ret_10m_cop",
+                         "net_ret_50m_cop",
+                         "net_ret_250m_cop"),
+                labels=c("ATC\nprimitive",
+                         "ATC\ncopycat\n(10M)",
+                         "ATC\ncopycat\n(50M)",
+                         "ATC\ncopycat\n(250M)",
+                         "Net\nprimitive",
+                         "Net\ncopycat\n(10M)",
+                         "Net\ncopycat\n(50M)",
+                         "Net\ncopycat\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.0125, +0.01)) +
+            ylab("Carhart alpha") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            # geom_point(
+            #     position = position_jitter(width = 0.9),
+            #     size = 0.1,
+            #     alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_alphas_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gAlphas)
+        dev.off()
+
+
+
+        # Differences in average returns
+        meanDiffsLong <- melt(
+            ss$mean,
+            id.vars = c("wfcin"),
+            measure.vars = c("atc_ret_10m_diff",
+                             "atc_ret_50m_diff",
+                             "atc_ret_250m_diff",
+                             "net_ret_10m_diff",
+                             "net_ret_50m_diff",
+                             "net_ret_250m_diff")
+        )
+
+        gMeanDiffs <- ggplot(meanDiffsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff"),
+                labels=c("ATC\n(10M)",
+                         "ATC\n(50M)",
+                         "ATC\n(250M)",
+                         "Net\n(10M)",
+                         "Net\n(50M)",
+                         "Net\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.005, +0.007)) +
+            ylab("Average return difference") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            # geom_point(
+            #     position = position_jitter(width = 0.9),
+            #     size = 0.1,
+            #     alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_means_diff_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gMeanDiffs)
+        dev.off()
+
+
+        # Differences in alphas
+        alphaDiffsLong <- melt(
+            ss$alpha[type == "alpha"],
+            id.vars = c("wfcin"),
+            measure.vars = c("atc_ret_10m_diff",
+                             "atc_ret_50m_diff",
+                             "atc_ret_250m_diff",
+                             "net_ret_10m_diff",
+                             "net_ret_50m_diff",
+                             "net_ret_250m_diff")
+        )
+
+        gAlphaDiffs <- ggplot(alphaDiffsLong, aes (x = variable, y = value)) +
+            scale_x_discrete(
+                breaks=c("atc_ret_10m_diff",
+                         "atc_ret_50m_diff",
+                         "atc_ret_250m_diff",
+                         "net_ret_10m_diff",
+                         "net_ret_50m_diff",
+                         "net_ret_250m_diff"),
+                labels=c("ATC\n(10M)",
+                         "ATC\n(50M)",
+                         "ATC\n(250M)",
+                         "Net\n(10M)",
+                         "Net\n(50M)",
+                         "Net\n(250M)")
+            ) +
+            scale_y_continuous(
+                labels = percent) +
+            coord_cartesian(ylim=c(-0.0075, +0.0075)) +
+            ylab("Average alpha difference") +
+            #xlab("Return type") +
+            theme(axis.title.x = element_blank()) +
+            # geom_point(
+            #     position = position_jitter(width = 0.9),
+            #     size = 0.1,
+            #     alpha = 0.3) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                alpha = 0.75) +
+            geom_boxplot(
+                na.rm = TRUE,
+                notch = TRUE,
+                outlier.shape = NA,
+                fill = NA) +
+            stat_boxplot(geom = "errorbar") +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = ciBelow,
+                fun.ymax = ciAbove,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                linetype = "dashed",
+                show.legend = FALSE,
+                na.rm = TRUE
+            ) +
+            stat_summary(
+                fun.y = mean,
+                fun.ymin = mean,
+                fun.ymax = mean,
+                colour = "darkred",
+                geom = "errorbar",
+                width = 0.95,
+                #size = 1,
+                linetype = "solid",
+                show.legend = FALSE,
+                na.rm = TRUE
+            )
+
+        tikz(file = 'latex/figures_alphas_diff_boxplots.tikz',
+             sanitize = TRUE,
+             width = widthCm / 2.54,
+             height=  heightCm / 2.54)
+        plot(gAlphaDiffs)
+        dev.off()
+    }
+
+    return(TRUE)
+}
+
+plotSizeDecileAnalysis <- function(ssf, widthCm = 15, heightCm = 7.75) {
+    sql_command <- paste0("
+        select
+          *
+        from performance.monthly
+    ")
+    wholeSample <- as.data.table(dbGetQuery(con, sql_command))
+
+    # on fund level
+    funds <- wholeSample[, .N, by = "wfcin"]
+    funds[, decile := ntile(N, 10)]
+
+    alphas <- copy(ssf$alpha[type == "alpha", list(
+        gross_ret_act,
+        net_ret_act,
+        wfcin
+    )])
+    atc_ret_act_alpha <- alphas[, mean(gross_ret_act), by = "wfcin"]
+    setnames(atc_ret_act_alpha, "V1", "atc_ret_act_alpha")
+    funds <- merge(funds, atc_ret_act_alpha, by = "wfcin")
+
+    net_ret_act_alpha <- alphas[, mean(net_ret_act), by = "wfcin"]
+    setnames(net_ret_act_alpha, "V1", "net_ret_act_alpha")
+    funds <- merge(funds, net_ret_act_alpha, by = "wfcin")
+
+    returns <- copy(ssf$mean[, list(
+        gross_ret_act,
+        net_ret_act,
+        net_ret_10m_diff,
+        wfcin
+    )])
+    atc_ret_act_return <- returns[, mean(gross_ret_act), by = "wfcin"]
+    setnames(atc_ret_act_return, "V1", "atc_ret_act_return")
+    funds <- merge(funds, atc_ret_act_return, by = "wfcin")
+
+    net_ret_act_return <- returns[, mean(net_ret_act), by = "wfcin"]
+    setnames(net_ret_act_return, "V1", "net_ret_act_return")
+    funds <- merge(funds, net_ret_act_return, by = "wfcin")
+
+    net_ret_diff_return <- returns[, mean(net_ret_10m_diff), by = "wfcin"]
+    setnames(net_ret_diff_return, "V1", "net_ret_diff_return")
+    funds <- merge(funds, net_ret_diff_return, by = "wfcin")
+
+    # on decile level
+    deciles <- funds[,
+        #lapply(.SD, winsor.mean, trim = 0.02, na.rm = TRUE),
+        lapply(.SD, mean, na.rm = TRUE),
+        .SDcols = -c("wfcin"),
+        by = "decile"
+    ]
+    setkey(deciles, decile)
+
+    # tables
+    decilesTable <- deciles[, -c("decile"), with = FALSE]
+    # convert to percents
+    decilesTable <- decilesTable * 100
+    # convert mean number of observation back
+    decilesTable[, N:= N/100]
+
+    decilesTable <- decilesTable[,list(
+        N,
+        atc_ret_act_return,
+        net_ret_act_return,
+        net_ret_diff_return,
+        atc_ret_act_alpha,
+        net_ret_act_alpha
+    )]
+
+    # latex table to stdout, because it is not formatted anyway
+    xtable(
+        x = decilesTable,
+        booktabs = TRUE,
+        decimals = 3
+     )
+
+    # graph
+    decilesLong <- melt(
+        deciles,
+        id.vars = "decile",
+        measure.vars = c("atc_ret_act_return",
+                         "net_ret_act_return",
+                         "net_ret_diff_return",
+                         "atc_ret_act_alpha",
+                         "net_ret_act_alpha")
+    )
+
+    facetNames <- list(
+        "atc_ret_act_return"   = "Primitive ATC\nreturn",
+         "net_ret_act_return"  = "Primitive net\nreturn",
+         "net_ret_diff_return" = "Net return\ngap",
+         "atc_ret_act_alpha"   = "Primitive ATC\nalpha",
+         "net_ret_act_alpha"   = "Primitive net\nalpha"
+    )
+
+    facetLabeller <- function(variable,value){
+        return(facetNames[value])
+    }
+
+    gHist <- ggplot(data = decilesLong, aes(x = decile, y = value)) +
+        geom_bar(stat="identity") +
+        facet_grid(. ~ variable, labeller = facetLabeller) +
+        scale_y_continuous(labels = percent) +
+        scale_x_discrete(limits=1:10) +
+        ylab("Mean") +
+        xlab("Number of observations per fund decile") +
+        geom_smooth(method = "lm", se=FALSE)
+
+    tikz(file = 'latex/figures_size_deciles.tikz',
+         sanitize = TRUE,
+         width = widthCm / 2.54,
+         height=  heightCm / 2.54)
+    plot(gHist)
+    dev.off()
+
 
 
 }
 
-createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
+
+getMonthLevelStatistics <- function() {
+    sql_command <- paste0("
+    select
+      *
+    from performance.monthly
+    ")
+    wholeSample <- as.data.table(dbGetQuery(con, sql_command))
+    wholeSample <- addDiffs(wholeSample)
+
+    ss <- list()
+    # mean
+    ss$mean <- wholeSample[,
+        lapply(.SD, mean, na.rm = TRUE),
+        .SDcols = -c("wfcin", "caldt"),
+        by = c("month", "year")
+    ]
+    # median
+    ss$median <- wholeSample[,
+        lapply(.SD, median, na.rm = TRUE),
+        .SDcols = -c("wfcin", "caldt"),
+        by = c("month", "year")
+    ]
+
+    ss$mean <- addDiffs(ss$mean)
+    return(ss)
+}
+
+createPlotsAcrossMonthsFirst <- function(ss, widthCm = 15, heightCm = 7.75) {
     ciAbove <- function(x, na.rm = TRUE, ...) {
         t <- t.test(x, na.rm = na.rm, ...)
         return(t$conf.int[2])
@@ -356,7 +1269,7 @@ createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
     # Average returns
     meanReturnsLong <- melt(
         ss$mean,
-        id.vars = c("wfcin"),
+        id.vars = c("year", "month"),
         measure.vars = c("gross_ret_act",
                          "atc_ret_10m_cop",
                          "atc_ret_50m_cop",
@@ -389,12 +1302,12 @@ createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
         #xlab("Return type") +
         theme(axis.title.x = element_blank()) +
         scale_y_continuous(
-            labels = percent,
-            limits = c(-0.005, + 0.015)) +
-        # geom_point(
-        #     position = position_jitter(width = 0.9),
-        #     size = 0.1,
-        #     alpha = 0.3) +
+            labels = percent) +
+        coord_cartesian(ylim=c(-0.12, +0.13)) +
+        geom_point(
+            position = position_jitter(width = 0.9),
+            size = 0.1,
+            alpha = 0.3) +
         geom_boxplot(
             na.rm = TRUE,
             notch = TRUE,
@@ -430,104 +1343,18 @@ createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
             na.rm = TRUE
         )
 
-    tikz(file = 'latex/figures_means_boxplots.tikz',
+    tikz(file = 'latex/figures_means_boxplots_by_months.tikz',
          sanitize = TRUE,
          width = widthCm / 2.54,
          height=  heightCm / 2.54)
     plot(gMeans)
     dev.off()
 
-    # Alphas of returns
-    alphasReturnsLong <- melt(
-        ss$alpha[type == "alpha", ],
-        id.vars = c("wfcin"),
-        measure.vars = c("gross_ret_act",
-                         "atc_ret_10m_cop",
-                         "atc_ret_50m_cop",
-                         "atc_ret_250m_cop",
-                         "net_ret_act",
-                         "net_ret_10m_cop",
-                         "net_ret_50m_cop",
-                         "net_ret_250m_cop")
-    )
-
-    gAlphas <- ggplot(alphasReturnsLong, aes (x = variable, y = value)) +
-        scale_x_discrete(
-            breaks=c("gross_ret_act",
-                     "atc_ret_10m_cop",
-                     "atc_ret_50m_cop",
-                     "atc_ret_250m_cop",
-                     "net_ret_act",
-                     "net_ret_10m_cop",
-                     "net_ret_50m_cop",
-                     "net_ret_250m_cop"),
-            labels=c("ATC\nprimitive",
-                     "ATC\ncopycat\n(10M)",
-                     "ATC\ncopycat\n(50M)",
-                     "ATC\ncopycat\n(250M)",
-                     "Net\nprimitive",
-                     "Net\ncopycat\n(10M)",
-                     "Net\ncopycat\n(50M)",
-                     "Net\ncopycat\n(250M)")
-        ) +
-        scale_y_continuous(
-            labels = percent,
-            limits = c(-0.0075, + 0.0075)) +
-        ylab("Carhart alpha") +
-        #xlab("Return type") +
-        theme(axis.title.x = element_blank()) +
-        # geom_point(
-        #     position = position_jitter(width = 0.9),
-        #     size = 0.1,
-        #     alpha = 0.3) +
-        geom_boxplot(
-            na.rm = TRUE,
-            notch = TRUE,
-            outlier.shape = NA,
-            alpha = 0.75) +
-        geom_boxplot(
-            na.rm = TRUE,
-            notch = TRUE,
-            outlier.shape = NA,
-            fill = NA) +
-        stat_boxplot(geom = "errorbar") +
-        stat_summary(
-            fun.y = mean,
-            fun.ymin = ciBelow,
-            fun.ymax = ciAbove,
-            colour = "darkred",
-            geom = "errorbar",
-            width = 0.95,
-            linetype = "dashed",
-            show.legend = FALSE,
-            na.rm = TRUE
-        ) +
-        stat_summary(
-            fun.y = mean,
-            fun.ymin = mean,
-            fun.ymax = mean,
-            colour = "darkred",
-            geom = "errorbar",
-            width = 0.95,
-            #size = 1,
-            linetype = "solid",
-            show.legend = FALSE,
-            na.rm = TRUE
-        )
-
-    tikz(file = 'latex/figures_alphas_boxplots.tikz',
-         sanitize = TRUE,
-         width = widthCm / 2.54,
-         height=  heightCm / 2.54)
-    plot(gAlphas)
-    dev.off()
-
-
 
     # Differences in average returns
     meanDiffsLong <- melt(
         ss$mean,
-        id.vars = c("wfcin"),
+        id.vars = c("year", "month"),
         measure.vars = c("atc_ret_10m_diff",
                          "atc_ret_50m_diff",
                          "atc_ret_250m_diff",
@@ -552,15 +1379,15 @@ createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
                      "Net\n(250M)")
         ) +
         scale_y_continuous(
-            labels = percent,
-            limits = c(-0.004, + 0.006)) +
+            labels = percent) +
+        coord_cartesian(ylim=c(-0.01, +0.01)) +
         ylab("Average return difference") +
         #xlab("Return type") +
         theme(axis.title.x = element_blank()) +
-        # geom_point(
-        #     position = position_jitter(width = 0.9),
-        #     size = 0.1,
-        #     alpha = 0.3) +
+        geom_point(
+            position = position_jitter(width = 0.9),
+            size = 0.1,
+            alpha = 0.3) +
         geom_boxplot(
             na.rm = TRUE,
             notch = TRUE,
@@ -596,91 +1423,11 @@ createPlots <- function(ss, widthCm = 15, heightCm = 7.75) {
             na.rm = TRUE
         )
 
-    tikz(file = 'latex/figures_means_diff_boxplots.tikz',
+    tikz(file = 'latex/figures_means_diff_boxplots_by_months.tikz',
          sanitize = TRUE,
          width = widthCm / 2.54,
          height=  heightCm / 2.54)
     plot(gMeanDiffs)
-    dev.off()
-
-
-    # Differences in alphas
-    alphaDiffsLong <- melt(
-        ss$alpha[type == "alpha"],
-        id.vars = c("wfcin"),
-        measure.vars = c("atc_ret_10m_diff",
-                         "atc_ret_50m_diff",
-                         "atc_ret_250m_diff",
-                         "net_ret_10m_diff",
-                         "net_ret_50m_diff",
-                         "net_ret_250m_diff")
-    )
-
-    gAlphaDiffs <- ggplot(alphaDiffsLong, aes (x = variable, y = value)) +
-        scale_x_discrete(
-            breaks=c("atc_ret_10m_diff",
-                     "atc_ret_50m_diff",
-                     "atc_ret_250m_diff",
-                     "net_ret_10m_diff",
-                     "net_ret_50m_diff",
-                     "net_ret_250m_diff"),
-            labels=c("ATC\n(10M)",
-                     "ATC\n(50M)",
-                     "ATC\n(250M)",
-                     "Net\n(10M)",
-                     "Net\n(50M)",
-                     "Net\n(250M)")
-        ) +
-        scale_y_continuous(
-            labels = percent,
-            limits = c(-0.0065, + 0.007)) +
-        ylab("Average alpha difference") +
-        #xlab("Return type") +
-        theme(axis.title.x = element_blank()) +
-        # geom_point(
-        #     position = position_jitter(width = 0.9),
-        #     size = 0.1,
-        #     alpha = 0.3) +
-        geom_boxplot(
-            na.rm = TRUE,
-            notch = TRUE,
-            outlier.shape = NA,
-            alpha = 0.75) +
-        geom_boxplot(
-            na.rm = TRUE,
-            notch = TRUE,
-            outlier.shape = NA,
-            fill = NA) +
-        stat_boxplot(geom = "errorbar") +
-        stat_summary(
-            fun.y = mean,
-            fun.ymin = ciBelow,
-            fun.ymax = ciAbove,
-            colour = "darkred",
-            geom = "errorbar",
-            width = 0.95,
-            linetype = "dashed",
-            show.legend = FALSE,
-            na.rm = TRUE
-        ) +
-        stat_summary(
-            fun.y = mean,
-            fun.ymin = mean,
-            fun.ymax = mean,
-            colour = "darkred",
-            geom = "errorbar",
-            width = 0.95,
-            #size = 1,
-            linetype = "solid",
-            show.legend = FALSE,
-            na.rm = TRUE
-        )
-
-    tikz(file = 'latex/figures_alphas_diff_boxplots.tikz',
-         sanitize = TRUE,
-         width = widthCm / 2.54,
-         height=  heightCm / 2.54)
-    plot(gAlphaDiffs)
     dev.off()
 
     return(TRUE)
@@ -792,6 +1539,7 @@ getCopycatPerformanceByYear <- function() {
     sql_command <- paste0("
     select
       year,
+      count(distinct wfcin) as nobs,
       avg(gross_ret_act) as primitive_gross,
       avg(net_ret_act) as primitive_net,
       avg(gross_ret_cop) as copycat_gross,
@@ -828,7 +1576,6 @@ getCopycatPerformanceByYear <- function() {
                             net_diff_250m)]
 
     return(byYear)
-
 }
 
 
@@ -1584,7 +2331,7 @@ getDecileAlphas <- function() {
 
 
 
-createTable <- function(decileMeans, decileAlphas) {
+createTables <- function(decileMeans, decileAlphas) {
     # This function creates tabularx tables for latex.
 
     # --------------------------------------------------------------------------
@@ -1771,212 +2518,247 @@ createTable <- function(decileMeans, decileAlphas) {
 }
 
 
+getSampleSummaryStatistics <- function() {
+    sql_command <- paste0("
+    with wfcins as (
+      select distinct
+        wfcin
+      from performance.monthly
+    )
+
+    select
+      fs.exp_ratio * 100 as exp_ratio,
+      fs.per_com,
+      fs.per_cash,
+      fs.per_bond + fs.per_conv + fs.per_corp + fs.per_govt + fs.per_muni + fs.per_fi_oth as per_bond
+    from clean.crsp_fs_wfcin as fs
+    where fs.wfcin in (select * from wfcins)
+    ")
+    fsData <- as.data.table(dbGetQuery(con, sql_command))
+
+    sql_command <- paste0("
+    with wfcins as (
+      select distinct
+        wfcin
+      from performance.monthly
+    )
+
+    select
+      r.mtna,
+      r.mnav,
+      r.mret * 100 as mret
+    from clean.mret_wfcin as r
+    where r.wfcin in (select * from wfcins)
+    ")
+    mretData <- as.data.table(dbGetQuery(con, sql_command))
+
+    sql_command <- paste0("
+    with wfcins as (
+      select distinct
+        wfcin
+      from performance.monthly
+    )
+
+    select
+      count(wfcin) as nobs
+    from clean.mret_wfcin as r
+    where r.wfcin in (select * from wfcins)
+    group by r.wfcin
+    ")
+    nobsData <- as.data.table(dbGetQuery(con, sql_command))
+
+    sumStat <- function(x, na.rm = TRUE) {
+        result <- rep(NA, 6)
+
+        result[1] <- mean(x, na.rm = na.rm)
+        result[2] <- fivenum(x, na.rm = na.rm)[2]
+        result[3] <- fivenum(x, na.rm = na.rm)[3]
+        result[4] <- fivenum(x, na.rm = na.rm)[4]
+        result[5] <- sd(x, na.rm = na.rm)
+        result[6] <- skewness(x, na.rm = na.rm)
+
+        return(result)
+    }
+
+    sumStatistics <- list()
+
+    sumStatistics[[1]] <- fsData[,
+           lapply(.SD, sumStat, na.rm = TRUE)
+    ]
+    sumStatistics[[1]] <- transpose(sumStatistics[[1]])
+
+    sumStatistics[[2]] <- mretData[,
+           lapply(.SD, sumStat, na.rm = TRUE)
+    ]
+    sumStatistics[[2]] <- transpose(sumStatistics[[2]])
+
+    sumStatistics[[3]] <- nobsData[,
+           lapply(.SD, sumStat, na.rm = TRUE)
+    ]
+    sumStatistics[[3]] <- transpose(sumStatistics[[3]])
+
+    sumStatistics <- rbindlist(sumStatistics)
+    rownames(sumStatistics) <- c(
+        colnames(fsData),
+        colnames(mretData),
+        colnames(nobsData)
+    )
+    colnames(sumStatistics) <- c(
+        "mean",
+        "q1",
+        "q2",
+        "q3",
+        "sd",
+        "skew"
+    )
+    print(xtable(
+        sumStatistics,
+        digits = 5
+    ))
+
+    sumStatistics[, variable := rownames(sumStatistics)]
+
+    return(sumStatistics)
+}
+
+getYearlyPerformance <- function(ssm) {
+    meansMonthly <- copy(ssm$mean)
+
+    returnProd <- function(x, na.rm = TRUE) {
+        return(prod(1 + x, na.rm = na.rm) - 1)
+    }
+
+    setkey(meansMonthly, year, month)
+
+    fundReturns <- meansMonthly[,
+        lapply(.SD, returnProd, na.rm = TRUE),
+        .SDcols = c(
+            "gross_ret_act",
+            "atc_ret_10m_cop",
+            "net_ret_act",
+            "net_ret_10m_cop"
+        ),
+        by = "year"
+    ]
 
 
+    sql_command <- paste0("
+        with preorder as (
+          select distinct on (dateff)
+            dateff,
+            rf,
+            mktrf
+          from factors.monthly
+          order by dateff
+        )
+        select
+          date_part('year', dateff) as year,
+          exp( sum( ln( 1+ rf + mktrf ) ) ) - 1 as stock_ret
+        from preorder
+        group by date_part('year', dateff)
+        order by date_part('year', dateff)
+    ")
+    stockReturns <- as.data.table(dbGetQuery(con, sql_command))
+
+    sql_command <- paste0("
+        with year_end_multiple as (
+          select
+            date_part('year', date) as year,
+            avg(ind) over (partition by date_part('year', date)) as ind
+          from bonds.monthly
+        ), year_end as (
+          select
+           year,
+           avg(ind) as ind
+         from year_end_multiple
+         group by year
+         order by year
+        ), rets as (
+          select
+            year,
+            ind / (lag(ind) over ()) - 1 as bond_ret
+          from year_end
+        )
+
+        select * from rets
+    ")
+
+    bondReturns <- as.data.table(dbGetQuery(con, sql_command))
+
+    sql_command <- paste0("
+        with preorder as (
+          select distinct on (caldt)
+            caldt,
+            ret
+          from cash.daily
+          order by caldt
+        )
+        select
+          date_part('year', caldt) as year,
+          exp( sum( ln( 1 + ret) ) ) - 1 as cash_ret
+        from preorder
+        group by date_part('year', caldt)
+        order by date_part('year', caldt)
+    ")
+    cashReturns <- as.data.table(dbGetQuery(con, sql_command))
+
+    sql_command <- paste0("
+        select
+          year,
+          count(distinct wfcin) as nobs
+        from performance.monthly
+        group by year
+        order by year
+    ")
+    nObs <- as.data.table(dbGetQuery(con, sql_command))
 
 
+    allreturns <- merge(
+        nObs,
+        fundReturns,
+        by = "year"
+    )
 
+    allreturns <- merge(
+        allreturns,
+        stockReturns,
+        by = "year"
+    )
 
+    allreturns <- merge(
+        allreturns,
+        bondReturns,
+        by = "year"
+    )
+    allreturns <- merge(
+        allreturns,
+        cashReturns,
+        by = "year"
+    )
 
+    dt <- allreturns[, list(
+        year,
+        nobs,
+        stock_ret,
+        bond_ret,
+        cash_ret,
+        gross_ret_act,
+        net_ret_act,
+        atc_ret_10m_cop,
+        net_ret_10m_cop
+    )]
 
+    dtPercent <- copy(dt * 100)
+    dtPercent[, year := year / 100]
+    dtPercent[, nobs := nobs / 100]
+    print(xtable(
+        dtPercent,
+        digits = 5
+    ), include.rownames=FALSE)
 
+    return(dt)
+}
 
-
-
-
-
-
-
-
-
-
-
-
-#
-# getDecileMeans <- function() {
-# # This function return mean comparisons (with t-statistic and p-values) for
-# # different decile sorting and different fund sizes. Note that decile 11
-# # means decile 1 minus decile 10.
-# #
-# # The returned object is a list of lists... where the first level indicates
-# # the fund size, the second level indicates which variable the deciles where
-# # sorted, the third level contains difference statistics (means, t-stat etc),
-# # each of this statistics is represented using a data table.
-#
-#     decileNames <- c("primitive_return_decile",
-#                      "net_return_decile",
-#                      "exp_ratio_decile",
-#                      "sr_decile",
-#                      "alphas_decile")
-#     dependentVariables <- c("gross_ret_act",
-#                             "net_ret_act",
-#                             "gross_ret_cop",
-#                             "atc_ret_cop",
-#                             "net_ret_cop",
-#                             "gross_diff",
-#                             "atc_ret_diff",
-#                             "net_ret_diff",
-#                             "gross_sr_act",
-#                             "net_sr_act",
-#                             "net_sr_cop",
-#                             "net_sr_diff")
-#
-#     means <- list()
-#     for(size in c(10,50,250)) {
-#         #size <- 50
-#         decileData <- getDecileData(size)
-#         alphaDeciles <- getAlphaDeciles(size)
-#
-#         decileData <- merge(
-#             decileData,
-#             alphaDeciles[, list(wfcin, year, month, alphas_decile)],
-#             by = c("wfcin", "year", "month")
-#         )
-#
-#         means[[as.character(size)]] <- list()
-#         for(decileName in decileNames) {
-#             # decileName <- "net_return_decile"
-#
-#             means[[as.character(size)]][[decileName]] <- list()
-#
-#             means[[as.character(size)]][[decileName]][["mean"]]  <- data.table(decile = 1:11)
-#             means[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
-#             means[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
-#
-#
-#             for(dependentVariable in dependentVariables) {
-#                 # dependentVariable <- "net_ret_diff"
-#
-#                 # means for deciles 1 to 10
-#                 data <- list()
-#                 for(decile in 1:10) {
-#                     # decile <- 2
-#
-#                     # get data for the current decile (averages)
-#                     data[[decile]] <- decileData[get(decileName) == decile, list(
-#                             monthMean = mean(get(dependentVariable), na.rm =TRUE)
-#                         ), by = list(year, month)]
-#                     setkey(data[[decile]], year, month)
-#
-#                     tTest <- t.test(data[[decile]][, monthMean])
-#
-#                     means[[as.character(size)]][[decileName]][["mean"]][decile, (dependentVariable) := tTest$estimate]
-#                     means[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := tTest$statistic]
-#                     means[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := tTest$p.value]
-#                 }
-#
-#                 # means fore decile 1 minus decile 10
-#                 dataD1MinusD10 <- data[[1]]
-#                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
-#
-#                 tTest <- t.test(dataD1MinusD10[, monthMean])
-#
-#                 means[[as.character(size)]][[decileName]][["mean"]][11, (dependentVariable) := tTest$estimate]
-#                 means[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := tTest$statistic]
-#                 means[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := tTest$p.value]
-#             }
-#         }
-#     }
-#
-#     return(means)
-# }
-#
-# getDecileAlphas <- function() {
-# # This function return carhart alphas (with t-statistic and p-values) for
-# # different decile sorting and different fund sizes. Note that decile 11
-# # means decile 1 minus decile 10.
-# #
-# # The returned object is a list of lists of lists, where the first level indicates
-# # the fund size, the second level indicates which variable the deciles where
-# # sorted, the third level contains difference statistics (alphas, t-stat etc),
-# # each of this statistics is represented using a data table.
-#
-#     decileNames <- c("primitive_return_decile",
-#                      "net_return_decile",
-#                      "exp_ratio_decile",
-#                      "sr_decile",
-#                      "alphas_decile")
-#     dependentVariables <- c("gross_ret_act",
-#                             "net_ret_act",
-#                             "gross_ret_cop",
-#                             "atc_ret_cop",
-#                             "net_ret_cop",
-#                             "gross_diff",
-#                             "atc_ret_diff",
-#                             "net_ret_diff",
-#                             "gross_sr_act",
-#                             "net_sr_act",
-#                             "net_sr_cop",
-#                             "net_sr_diff")
-#
-#     alphas <- list()
-#     for(size in c(10,50,250)) {
-#         #size <- 50
-#         decileData <- getDecileData(size)
-#         alphaDeciles <- getAlphaDeciles(size)
-#
-#         decileData <- merge(
-#             decileData,
-#             alphaDeciles[, list(wfcin, year, month, alphas_decile)],
-#             by = c("wfcin", "year", "month")
-#         )
-#
-#         alphas[[as.character(size)]] <- list()
-#         for(decileName in decileNames) {
-#             # decileName <- "net_return_decile"
-#
-#             alphas[[as.character(size)]][[decileName]] <- list()
-#
-#             alphas[[as.character(size)]][[decileName]][["alpha"]]  <- data.table(decile = 1:11)
-#             alphas[[as.character(size)]][[decileName]][["tstat"]]  <- data.table(decile = 1:11)
-#             alphas[[as.character(size)]][[decileName]][["pvalue"]] <- data.table(decile = 1:11)
-#
-#
-#             for(dependentVariable in dependentVariables) {
-#                 # dependentVariable <- "net_ret_diff"
-#
-#                 # alphas for deciles 1 to 10
-#                 data <- list()
-#                 for(decile in 1:10) {
-#                     # decile <- 2
-#
-#                     # get data for the current decile (averages)
-#                     data[[decile]] <- decileData[get(decileName) == decile, list(
-#                             monthMean = mean(get(dependentVariable), na.rm =TRUE),
-#                             mktrf = mean(mktrf),
-#                             smb = mean(smb),
-#                             hml = mean(hml),
-#                             rf = mean(rf),
-#                             umd = mean(umd)
-#                         ), by = list(year, month)]
-#                     setkey(data[[decile]], year, month)
-#
-#                     fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = data[[decile]])
-#                     se <- coeftest(fm, NeweyWest(fm, lag = 2))
-#
-#                     alphas[[as.character(size)]][[decileName]][["alpha"]][decile, (dependentVariable) := se[1,1]]
-#                     alphas[[as.character(size)]][[decileName]][["tstat"]][decile, (dependentVariable) := se[1,3]]
-#                     alphas[[as.character(size)]][[decileName]][["pvalue"]][decile, (dependentVariable) := se[1,4]]
-#                 }
-#
-#                 # alphas fore decile 1 minus decile 10
-#                 dataD1MinusD10 <- data[[1]]
-#                 dataD1MinusD10[, monthMean := data[[1]][, monthMean] - data[[10]][, monthMean]]
-#
-#                 fm <- lm(monthMean ~ rf + mktrf + smb + hml + umd, data = dataD1MinusD10)
-#                 se <- coeftest(fm, NeweyWest(fm, lag = 2))
-#
-#                 alphas[[as.character(size)]][[decileName]][["alpha"]][11, (dependentVariable) := se[1,1]]
-#                 alphas[[as.character(size)]][[decileName]][["tstat"]][11, (dependentVariable) := se[1,3]]
-#                 alphas[[as.character(size)]][[decileName]][["pvalue"]][11, (dependentVariable) := se[1,4]]
-#
-#             }
-#         }
-#     }
-#
-#     return(alphas)
-#
-# }
 
 
 

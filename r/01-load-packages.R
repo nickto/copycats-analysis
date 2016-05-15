@@ -1,3 +1,4 @@
+if (!require("moments")) install.packages("moments")
 if (!require("dplyr")) install.packages("dplyr")
 if (!require("RPostgreSQL")) install.packages("RPostgreSQL")
 if (!require("lubridate")) install.packages("lubridate")
@@ -17,6 +18,7 @@ if (!require("xtable")) install.packages("xtable")
 
 # If the above command does not work, then install from another repo:
 # install.packages('ff', repo='http://nbcgib.uesc.br/mirrors/cran/')
+library(moments)     # skewness
 library(dplyr)       # data frame manipulations
 library(RPostgreSQL) # connection to Postgre
 library(lubridate)   # usefule date function
@@ -33,5 +35,5 @@ library(scales)      # for scaling variables in ggplots
 # For this to work correcly you need to have a LaTeX compiler
 library(tikzDevice)  # for outputing graphs to LaTeX
 #library(Hmisc)
-library(xtable)
+library(xtable)      # for outputting tables to LaTeX
 

@@ -6,6 +6,8 @@
 
 /latex/tables*
 /latex/*.tikz
+!/latex/part-01*
+!/latex/part-02*
 
 /bin/
 /data/

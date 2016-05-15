@@ -115,14 +115,15 @@ getOtherReturn <- function() {
     # This function returns the monthly time-series of returns of other assets
     # which are assumed to be bonds.
 
-    bondIndex <- fread(
-        "data/raw/fred-bond-index-1989-12-2016-05.csv",
-        skip = 10,
-        na.strings = "#N/A"
-    )
-    setnames(bondIndex,
-             c("observation_date", "BAMLCC2A035YTRIV"),
-             c("date", "index"))
+    sql_command <- paste0("
+        select
+          date as date,
+          ind as index
+        from bonds.monthly
+        order by date
+    ")
+    bondIndex <- as.data.table(dbGetQuery(con, sql_command))
+
     bondIndex[, lagIndex := shift(
         bondIndex[, index],
         n = 1,
