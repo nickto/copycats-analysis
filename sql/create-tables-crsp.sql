@@ -129,7 +129,6 @@ crsp.fund_summary(
     exp_ratio NUMERIC(10,6),
     mgmt_fee NUMERIC(16,6)  ,
     turn_ratio REAL,
---    turn_ratio NUMERIC(10,6),
     fiscal_yearend DATE,
     crsp_obj_cd VARCHAR(4),
     si_obj_cd VARCHAR(3),

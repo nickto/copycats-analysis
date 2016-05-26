@@ -4,7 +4,14 @@
 # store it in the memory.
 # Then we set up databses: create schemas (tmp schema is a legacy. Can be
 # removed).
-#
+# Then we obtain relevant holdings for each period, where period is the time
+# from the beginning of the month, to the end of the month, but might be split
+# into two, if there is new disclosure in the middle.
+# The we link each stock in the holdings with the respective returns for the
+# period and calculate weights of each stock.
+# Then we add transaction costs on the dates when there is a disclosure.
+# Then we obtain monthly returns from period returns, link them, with respective
+# primitive returns and store them in the database.
 
 source("./r/02-connect-to-db.R")
 source("./r/04-copy-performance-functions.R")
